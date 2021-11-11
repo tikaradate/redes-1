@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-
+#include <errno.h>
 
 int ConexaoRawSocket(char *device)
 {
@@ -25,7 +25,7 @@ int ConexaoRawSocket(char *device)
   memset(&ir, 0, sizeof(struct ifreq));  	/*dispositivo eth0*/
   memcpy(ir.ifr_name, device, sizeof(device));
   if (ioctl(soquete, SIOCGIFINDEX, &ir) == -1) {
-    printf("Erro no ioctl\n");
+    printf("Erro no ioctl %s\n", strerror(errno));
     exit(-1);
   }
 	
@@ -52,5 +52,6 @@ int ConexaoRawSocket(char *device)
 }
 
 int main(){
+	ConexaoRawSocket("enp1s0");
     printf("hello world.\n");
 }
