@@ -10,7 +10,6 @@
 #include <errno.h>
 
 #define DEV "lo"
-
 int main(){
 	int soquete;
 	struct ifreq ir;
@@ -49,8 +48,10 @@ int main(){
 		exit(-1);
 	}
 
-	char b[100] = "123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789\n";
-	send(soquete, b, strlen(b)+1, MSG_OOB);
-	if(sendto(soquete, b, sizeof(b), 0, (struct sockaddr*) &endereco, sizeof(struct sockaddr_ll)))
-		perror("AAAAAA");
+	char c[100];
+	int bytes, fromlen = sizeof(endereco);
+	bytes = recvfrom(soquete, c, sizeof(c), 0, (struct sockaddr*) &endereco, &fromlen);
+	printf("recv()'d %d bytes of data in buf\n", bytes);
+	printf("%s\n", c);
+	printf("from sll addr %d\n", inet_ntoa(endereco.sll_addr)); 
 }
