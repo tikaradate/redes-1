@@ -4,15 +4,14 @@
 #include <net/ethernet.h>
 #include <linux/if_packet.h>
 #include <linux/if.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <errno.h>
+#include "comms.h"
 
-#define DEV "lo"
-
-int main(){
-	int soquete;
+int raw_socket(char *dev){
+    int soquete;
 	struct ifreq ir;
 	struct sockaddr_ll endereco;
 	struct packet_mreq mr;
@@ -24,7 +23,7 @@ int main(){
 	}
 
 	memset(&ir, 0, sizeof(struct ifreq));  	/*dispositivo eth0*/
-	memcpy(ir.ifr_name, DEV, sizeof(DEV));
+	memcpy(ir.ifr_name, dev, sizeof(dev));
 	if (ioctl(soquete, SIOCGIFINDEX, &ir) == -1) {
 		printf("Erro no ioctl %s\n", strerror(errno));
 		exit(-1);
@@ -49,8 +48,5 @@ int main(){
 		exit(-1);
 	}
 
-	char b[100] = "123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789\n";
-	send(soquete, b, strlen(b)+1, MSG_OOB);
-	if(sendto(soquete, b, sizeof(b), 0, (struct sockaddr*) &endereco, sizeof(struct sockaddr_ll)))
-		perror("AAAAAA");
+    return soquete;
 }
