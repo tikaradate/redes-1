@@ -13,7 +13,7 @@
 
 #define DEV "lo"
 int main(){
-	char c[100];
+	int c[100];
 	int bytes;
 	int soquete;
 	soquete = raw_socket("lo");
@@ -22,5 +22,5 @@ int main(){
 	// bytes = recv(soquete, c, sizeof(c), 0);
 	bytes = read(soquete, c, sizeof(c));
 	printf("recv()'d %d bytes of data in buf\n", bytes);
-	printf("%s\n", c);
+	printf("%d\n", c[1]);
 }

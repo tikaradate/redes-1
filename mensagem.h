@@ -5,10 +5,10 @@ struct mensagem{
 	int tam;
 	int seq;
 	int tipo;
-	int dados; // um vetor talvez?
+	int dados[15];
 	int paridade;
 };
 
+int* monta_pacote(struct mensagem msg);
+
 int calcula_paridade(struct mensagem msg);
-
-
