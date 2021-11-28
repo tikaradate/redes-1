@@ -9,12 +9,13 @@
 #include <stdio.h>
 #include <errno.h>
 
+#include <inttypes.h> 
+
 #include "mensagem.h"
 #include "comms.h"
 
 int main(){
 	int soquete;
-
 	
 	//char b[100] = "123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789\n";
 	struct mensagem msg;
@@ -23,7 +24,7 @@ int main(){
 	msg.src = 0b11;
 	msg.tam = 0;
 	msg.seq = 0b0001;
-	msg.tipo = 0b0010;
+	msg.tipo = 0b0001;
 	msg.paridade = 0b00001111;
 	// int b[4+msg.tam+1];
 	// b[0] = msg.ini;
@@ -39,10 +40,14 @@ int main(){
 	// printf("%d\n",sizeof(b));
 	// if(send(soquete, b, 13, 0))
 	// 	perror("AAAAAA");
-	int *pacote = monta_pacote(msg);
+	uint8_t *pacote = monta_pacote(msg);
  	soquete = raw_socket("lo");
-	printf("%d\n", msg.tam+4+1);
-	if(send(soquete, pacote, (4+msg.tam)*4, 0)) // precisa multiplicar por quatro pois cada int tem 4 bytes
+	printf("aaaa\n");
+	printf("%d\n", pacote[0]);
+	printf("%d\n", pacote[1]);
+	printf("%d\n", pacote[2]);
+	imprime_mensagem(msg);
+	if(send(soquete, pacote, (4+msg.tam)*4, 0)) // tem que multiplicar por 4 por alguma razao que nao descobri ainda
 		perror("AAAAAA");
 	// if(sendto(soquete, b, sizeof(b), 0, (struct sockaddr*) &endereco, sizeof(struct sockaddr_ll)))
 	// 	perror("AAAAAA");

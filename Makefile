@@ -10,6 +10,8 @@ CFLAGS = -Wall
 %.o: %.c %.h utils.h
 	$(CC) -c $(CFLAGS) $<
 
+all: $(PROG1) $(PROG2)
+
 $(PROG1) : % :  $(OBJS) %.o
 	$(CC) -o $@ $^ $(LFLAGS)
 

@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <inttypes.h> 
+
 #include "mensagem.h"
 
 int calcula_paridade(struct mensagem msg){
@@ -8,8 +10,8 @@ int calcula_paridade(struct mensagem msg){
 	// XOR byte a byte <= não entendi essa
 }
 
-int* monta_pacote(struct mensagem msg){
-	int *pacote = calloc(4+msg.tam+1, sizeof(int));
+uint8_t* monta_pacote(struct mensagem msg){
+	uint8_t *pacote = calloc(4+msg.tam, sizeof(uint8_t));
 	pacote[0] = msg.ini;
 	pacote[1] = (msg.dst << 6) | (msg.src << 4) | msg.tam;
 	pacote[2] = (msg.seq << 4) | msg.tipo;
@@ -21,13 +23,13 @@ int* monta_pacote(struct mensagem msg){
 	return pacote;
 }
 
-struct mensagem* desmonta_pacote(int *pacote){
-	struct mensagem *msg = malloc(sizeof(struct mensagem));
+struct mensagem* desmonta_pacote(uint8_t *pacote){
+	struct mensagem *msg = calloc(1,sizeof(struct mensagem));
 	msg->ini  = pacote[0];
-	msg->dst  = pacote[1] & 0b11000000;
-	msg->src  = pacote[1] & 0b00110000;
+	msg->dst  = (pacote[1] & 0b11000000) >> 6;
+	msg->src  = (pacote[1] & 0b00110000) >> 4;
 	msg->tam  = pacote[1] & 0b00001111;
-	msg->seq  = pacote[2] & 0b11110000;
+	msg->seq  = (pacote[2] & 0b11110000) >> 4;
 	msg->tipo = pacote[2] & 0b00001111;
 	for(int i = 0; i < msg->tam; i++){
 		msg->dados[i] = pacote[i+3]; 
@@ -36,6 +38,15 @@ struct mensagem* desmonta_pacote(int *pacote){
 
 	return msg;
 } 
+
+void imprime_mensagem(struct mensagem msg){
+	printf("%d\n", msg.ini );
+	printf("%d\n", msg.dst );
+	printf("%d\n", msg.src );
+	printf("%d\n", msg.tam );
+	printf("%d\n", msg.seq );
+	printf("%d\n", msg.tipo);
+}
 
 
 int tipo_mensagem(char *tipo){
