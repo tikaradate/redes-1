@@ -1,3 +1,4 @@
+#include <inttypes.h>
 struct mensagem{
 	uint8_t ini;
 	uint8_t dst;
@@ -16,3 +17,5 @@ struct mensagem* desmonta_pacote(uint8_t *pacote);
 void imprime_mensagem(struct mensagem msg);
 
 int calcula_paridade(struct mensagem msg);
+
+int tipo_mensagem(char *tipo);

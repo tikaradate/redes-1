@@ -50,21 +50,21 @@ void imprime_mensagem(struct mensagem msg){
 
 
 int tipo_mensagem(char *tipo){
-	if(strcmp(tipo, "cd")){
+	if(strcmp(tipo, "cd") == 0){
 		return 0b0000;
-	} else if (strcmp(tipo, "ls")){
+	} else if (strcmp(tipo, "ls") == 0){
 		return 0b0001;
-	} else if (strcmp(tipo, "ver")){
+	} else if (strcmp(tipo, "ver") == 0){
 		return 0b0010;
-	} else if (strcmp(tipo, "linha")){
+	} else if (strcmp(tipo, "linha") == 0){
 		return 0b0011;
-	} else if (strcmp(tipo, "linhas")){
+	} else if (strcmp(tipo, "linhas") == 0){
 		return 0b0100;
-	} else if (strcmp(tipo, "edit")){
+	} else if (strcmp(tipo, "edit") == 0){
 		return 0b0101;
-	} else if (strcmp(tipo, "compilar")){
+	} else if (strcmp(tipo, "compilar") == 0){
 		return 0b0110;
 	}
-	fprintf(stderr, "comando não suportado!\n");
+	fprintf(stderr, "comando não suportado!\n"); // talvez não matar o programa? hmm
 	exit(1);
 } 
