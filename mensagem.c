@@ -5,9 +5,7 @@
 #include "mensagem.h"
 
 int calcula_paridade(struct mensagem msg){
-	// paridade vertical <= preciso rever
-	// tam, seq, tipo, dados
-	// XOR byte a byte <= não entendi essa
+	
 }
 
 uint8_t* monta_pacote(struct mensagem msg){
@@ -45,6 +43,10 @@ void imprime_mensagem(struct mensagem msg){
 	printf("%d\n", msg.src );
 	printf("%d\n", msg.tam );
 	printf("%d\n", msg.seq );
+	for(int i = 0; i < msg.tam; i++){
+		printf("%c", msg.dados[i]);
+	}
+	printf("\n");
 	printf("%d\n", msg.tipo);
 }
 

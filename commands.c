@@ -20,9 +20,24 @@ int main(){
     // comando[i] = '\0';
     // printf("%s\n", comando);
     char *comando = strtok(str, " \n");
-    int tipo = tipo_mensagem(comando);
-    if(tipo == 0 || tipo == 1 || tipo == 4)
-        char *arg1 = strok(NULL, " \n");
+    char *diretorio;
+    if(strcmp(comando, "cd") == 0){
+		diretorio = strtok(NULL, " \n");
+        printf("%s\n", diretorio);
+	} 
+    // else if (strcmp(comando, "ls") == 0){
+	// 	return 0b0001;
+	// } else if (strcmp(comando, "ver") == 0){
+	// 	return 0b0010;
+	// } else if (strcmp(comando, "linha") == 0){
+	// 	return 0b0011;
+	// } else if (strcmp(comando, "linhas") == 0){
+	// 	return 0b0100;
+	// } else if (strcmp(comando, "edit") == 0){
+	// 	return 0b0101;
+	// } else if (strcmp(comando, "compilar") == 0){
+	// 	return 0b0110;
+	// }
     // ver como tratar os argumentos
     // acho que vai ter que ser tudo separado
     // o pior é o compilar que tem n flags ...
