@@ -4,6 +4,10 @@
         "typeinfo": "c",
         "random": "c",
         "comms.h": "c",
-        "inttypes.h": "c"
+        "inttypes.h": "c",
+        "tuple": "c",
+        "ranges": "c",
+        "complex": "c",
+        "*.tcc": "cpp"
     }
 }

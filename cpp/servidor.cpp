@@ -38,8 +38,7 @@ int main(){
 			int paridade;
 			// todos equivalentes
 			// bytes = recvfrom(soquete, c, sizeof(c), 0, (struct sockaddr*) &endereco, &fromlen);
-			// bytes = recv(soquete, c, sizeof(c), 0);
-			bytes = read(soquete, pacote, 20);
+			bytes = recv(soquete, pacote, 19, 0);
 			//printf("recv()'d %d bytes of data in buf\n", bytes);
 			struct mensagem *msg = desmonta_pacote(pacote);
 			if(msg->seq != seq ){
@@ -68,8 +67,6 @@ int main(){
 					perror("Diagnostico ");
 				continue;
 			}
-
-			
 
 			seq = (seq+1)%16;
 			imprime_mensagem(*msg);

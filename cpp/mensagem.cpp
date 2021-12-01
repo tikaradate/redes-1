@@ -1,15 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h> 
+#include <string.h>
 
 #include "mensagem.h"
+
 
 int calcula_paridade(struct mensagem msg){
 	
 }
 
 uint8_t* monta_pacote(struct mensagem msg){
-	uint8_t *pacote = calloc(4+msg.tam, sizeof(uint8_t));
+	uint8_t *pacote = (uint8_t *) calloc(4+msg.tam, sizeof(uint8_t));
 	pacote[0] = msg.ini;
 	pacote[1] = (msg.dst << 6) | (msg.src << 4) | msg.tam;
 	pacote[2] = (msg.seq << 4) | msg.tipo;
@@ -22,7 +24,7 @@ uint8_t* monta_pacote(struct mensagem msg){
 }
 
 struct mensagem* desmonta_pacote(uint8_t *pacote){
-	struct mensagem *msg = calloc(1,sizeof(struct mensagem));
+	struct mensagem *msg = (struct mensagem *) calloc(1,sizeof(struct mensagem));
 	msg->ini  = pacote[0];
 	msg->dst  = (pacote[1] & 0b11000000) >> 6;
 	msg->src  = (pacote[1] & 0b00110000) >> 4;
@@ -70,36 +72,3 @@ int tipo_mensagem(char *tipo){
 	fprintf(stderr, "comando não suportado!\n"); // talvez não matar o programa? hmm
 	exit(1);
 } 
-
-// void enfileira(struct nodo **primeiro, struct mensagem *msg){
-// 	struct nodo *novo = malloc(sizeof(struct nodo));
-//     if (!novo) return;// tratar melhor? lol
-
-//     novo->msg = msg;
-//     novo->proximo = *primeiro;
-
-//     *primeiro = novo;
-// }
-
-// struct mensagem *desenfileira(struct nodo **primeiro){
-// 	struct nodo *atual, *anterior = NULL;
-//     struct mensagem *elemento = NULL;
-
-//     if (*primeiro == NULL) return -1;
-
-//     atual = *primeiro;
-//     while (atual->proximo != NULL) {
-//         anterior = atual;
-//         atual = atual->proximo;
-//     }
-
-//     elemento = atual->msg;
-//     free(atual);
-    
-//     if (anterior)
-//         anterior->proximo = NULL;
-//     else
-//         *primeiro = NULL;
-
-//     return elemento;
-// }
