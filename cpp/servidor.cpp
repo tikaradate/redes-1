@@ -10,9 +10,16 @@
 #include <errno.h>
 
 #include <inttypes.h> 
+#include <iostream>
+
+#include <dirent.h>
+#include <unistd.h>
 
 #include "comms.h"
 #include "mensagem.h"
+
+using std::cout;
+using std::endl;
 
 #define ENVIA 1
 #define RECEBE -1
@@ -28,49 +35,64 @@ int main(){
 	
 	int estado = RECEBE;
 	int seq = 0;
-	while(1==1){
-		if(estado == ENVIA){
-			
-			estado = RECEBE;
-		} else if (estado == RECEBE){
-			uint8_t pacote[19];
-			int bytes;
-			int paridade;
-			// todos equivalentes
-			// bytes = recvfrom(soquete, c, sizeof(c), 0, (struct sockaddr*) &endereco, &fromlen);
+	while(1){
+		uint8_t pacote[19] = {};
+		int bytes;
+		int paridade;
+		// todos equivalentes
+		// bytes = recvfrom(soquete, c, sizeof(c), 0, (struct sockaddr*) &endereco, &fromlen);
+		bytes = recv(soquete, pacote, 19, 0);
+		struct mensagem *msg = desmonta_pacote(pacote);
+		while(msg->src == 0b10){
+			cout << "socorro" << endl;
 			bytes = recv(soquete, pacote, 19, 0);
-			//printf("recv()'d %d bytes of data in buf\n", bytes);
-			struct mensagem *msg = desmonta_pacote(pacote);
-			if(msg->seq != seq ){
-				continue;
-			}
-			if(msg->dst == 0b01){
-				continue;
-			}
-
-			paridade = msg->tam ^ msg->seq ^ msg->tipo;
-			for(int i = 0; i < msg->tam; i++){
-				msg->paridade ^= msg->dados[i]; 
-			}
-
-			if(paridade != msg->paridade){
-				// envia_nack();
-				struct mensagem nack;
-				nack.ini = 0b01111110;
-				nack.dst = 0b01;
-				nack.src = 0b10;
-				nack.tam = 0;
-				nack.seq = seq;
-				nack.tipo = 0b1001;
-				nack.paridade = nack.tam ^ nack.seq ^ nack.tipo;
-				if(send(soquete, pacote, (4+nack.tam)*4, 0)) // tem que multiplicar por 4 por alguma razao que nao descobri ainda
-					perror("Diagnostico ");
-				continue;
-			}
-
-			seq = (seq+1)%16;
-			imprime_mensagem(*msg);
-			estado = ENVIA;
+			msg = desmonta_pacote(pacote);
 		}
+		paridade = msg->tam ^ msg->seq ^ msg->tipo;
+		for(int i = 0; i < msg->tam; i++){
+			paridade ^= msg->dados[i]; 
+		}
+		if(paridade != msg->paridade){
+			std::cout << "fudeu irmao\n";
+		}
+		if(seq != msg->seq){
+			continue;
+		}
+		// se ta tudo ok, aumenta o seq	
+		seq = (seq+1)%16;
+		char *comando = string_mensagem(msg->tipo);
+		cout << comando << endl;
+		if(strcmp(comando, "cd") == 0){
+			std::string dir;
+			for(int i: msg->dados)
+			 	dir.push_back(i);
+			cout << "diretorio:" <<  dir << endl;
+			
+			struct mensagem ack;
+			ack.ini = 0b01111110;
+			ack.dst = 0b01;
+			ack.src = 0b10;
+			ack.tam = 0;
+			ack.seq = seq;
+			ack.tipo = 0b1000;
+			ack.paridade = ack.tam ^ ack.seq ^ ack.tipo;
+			if(send(soquete, pacote, (4+ack.tam)*4, 0)) // tem que multiplicar por 4 por alguma razao que nao descobri ainda
+				perror("Diagnostico");
+			
+			
+		} else if(strcmp(comando, "ls") == 0){
+
+		} else if(strcmp(comando, "ver") == 0){
+
+		} else if(strcmp(comando, "linha") == 0){
+
+		} else if(strcmp(comando, "linhas") == 0){
+
+		} else if(strcmp(comando, "edit") == 0){
+
+		} else if(strcmp(comando, "compilar") == 0){
+
+		}
+		
 	}
 }
