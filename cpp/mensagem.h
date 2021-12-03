@@ -22,4 +22,4 @@ int tipo_mensagem(char *tipo);
 
 char *string_mensagem(int b_tipo);
 
-struct mensagem *monta_mensagem(char *comando, char *argumento, int dst, int seq);
+struct mensagem *monta_mensagem(char *tipo, char *dados, int src, int dst, int seq);

@@ -68,53 +68,73 @@ int tipo_mensagem(char *tipo){
 		return 0b0101;
 	} else if (strcmp(tipo, "compilar") == 0){
 		return 0b0110;
+	} else if (strcmp(tipo, "ack") == 0){
+		return 0b1000;
+	} else if (strcmp(tipo, "nack") == 0){
+		return 0b1001;
+	} else if (strcmp(tipo, "linha_dados") == 0){
+		return 0b1010;
+	} else if (strcmp(tipo, "ls_dados") == 0){
+		return 0b1011;
+	} else if (strcmp(tipo, "conteudo") == 0){
+		return 0b1100;
+	} else if (strcmp(tipo, "fim") == 0){
+		return 0b1101;
+	} else if (strcmp(tipo, "erro") == 0){
+		return 0b1111;
 	}
-	fprintf(stderr, "comando não suportado!\n"); // talvez não matar o programa? hmm
-	exit(1);
 } 
 
+// talvez não estritamente necessário
 char *string_mensagem(int b_tipo){
 	switch (b_tipo){
-		case 0b0000:
+	case 0b0000:
 		return "cd";
-		break;
-		case 0b0001:
+	case 0b0001:
 	    return "ls";
-		break;
-		case 0b0010:
+	case 0b0010:
 	  	return "ver";
-		break;
-		case 0b0011:
+	case 0b0011:
 	  	return "linha";
-		break;
-		case 0b0100:
+	case 0b0100:
 	  	return "linhas";
-		break;
-		case 0b0101:
+	case 0b0101:
 	  	return "edit";
-		break;
-		case 0b0110:
+	case 0b0110:
 	  	return "compilar";
+	case 0b1000:
+		return "ack";
+	case 0b1001:
+	    return "nack";
+	case 0b1010:
+	  	return "linha_dados";
+	case 0b1011:
+	  	return "ls_dados";
+	case 0b1100:
+	  	return "conteudo";
+	case 0b1101:
+	  	return "fim";
+	case 0b1111:
+	  	return "erro";
 		default:
 		break;
 	}
 } 
 
-struct mensagem *monta_mensagem(char *comando, char *argumento, int dst, int seq){
+struct mensagem *monta_mensagem(char *tipo, char *dados, int src, int dst, int seq){
 	struct mensagem *msg = (struct mensagem *) malloc(sizeof(struct mensagem));
 	
 	msg->ini = 0b01111110;
 	msg->dst = dst;
-	if(dst == 0b01) msg->src = 0b10;
-	else msg->src = 0b01;
-	msg->tipo = tipo_mensagem(comando);
-	if(!argumento) msg->tam = 0;
-	else msg->tam = strlen(argumento);
+	msg->src = src;
+	msg->tipo = tipo_mensagem(tipo);
+	if(!dados) msg->tam = 0;
+	else msg->tam = strlen(dados);
 	msg->seq = seq;
 	msg->paridade = msg->tam ^ msg->seq ^ msg->tipo;
 	for(int i = 0; i < msg->tam; i++){
-		msg->dados[i] = argumento[i];
-		msg->paridade ^= argumento[i]; 
+		msg->dados[i] = dados[i];
+		msg->paridade ^= dados[i]; 
 	}
 
 	return msg;

@@ -14,12 +14,15 @@
 
 #include <dirent.h>
 #include <unistd.h>
+#include <cmath>
 
 #include "comms.h"
 #include "mensagem.h"
+#include "list.h"
 
 using std::cout;
 using std::endl;
+using std::string;
 
 #define ENVIA 1
 #define RECEBE -1
@@ -36,30 +39,28 @@ int main(){
 	int estado = RECEBE;
 	int seq = 0;
 	while(1){
-		uint8_t pacote[19] = {};
+		uint8_t res_pacote[19];
+		uint8_t *pacote;
 		int bytes;
 		int paridade;
-		// todos equivalentes
-		// bytes = recvfrom(soquete, c, sizeof(c), 0, (struct sockaddr*) &endereco, &fromlen);
-		bytes = recv(soquete, pacote, 19, 0);
-		struct mensagem *msg = desmonta_pacote(pacote);
-		while(msg->src == 0b10){
-			cout << "socorro" << endl;
-			bytes = recv(soquete, pacote, 19, 0);
-			msg = desmonta_pacote(pacote);
-		}
+		struct mensagem *msg;
+
+		do{
+			bytes = recv(soquete, res_pacote, 19, 0);
+			msg = desmonta_pacote(res_pacote);
+		} while((int)msg->src != 0b01);
+
 		paridade = msg->tam ^ msg->seq ^ msg->tipo;
 		for(int i = 0; i < msg->tam; i++){
 			paridade ^= msg->dados[i]; 
 		}
 		if(paridade != msg->paridade){
-			std::cout << "fudeu irmao\n";
+			continue;
 		}
 		if(seq != msg->seq){
 			continue;
 		}
 		// se ta tudo ok, aumenta o seq	
-		seq = (seq+1)%16;
 		char *comando = string_mensagem(msg->tipo);
 		cout << comando << endl;
 		if(strcmp(comando, "cd") == 0){
@@ -67,20 +68,85 @@ int main(){
 			for(int i: msg->dados)
 			 	dir.push_back(i);
 			cout << "diretorio:" <<  dir << endl;
-			
-			struct mensagem ack;
-			ack.ini = 0b01111110;
-			ack.dst = 0b01;
-			ack.src = 0b10;
-			ack.tam = 0;
-			ack.seq = seq;
-			ack.tipo = 0b1000;
-			ack.paridade = ack.tam ^ ack.seq ^ ack.tipo;
-			if(send(soquete, pacote, (4+ack.tam)*4, 0)) // tem que multiplicar por 4 por alguma razao que nao descobri ainda
-				perror("Diagnostico");
-			
-			
+			int ret = chdir(dir.c_str());
+			if(ret == 0){
+				errno = 0;
+				struct mensagem *ack;
+				char buff[100];
+				printf("Diretorio atual: %s\n", getcwd(buff, 100));
+				cout << "ack!" << endl;
+				ack = monta_mensagem("ack", NULL, 0b10, 0b01, seq);
+				pacote = monta_pacote(*ack);
+				if(send(soquete, pacote, 19, 0))
+					perror("Diagnostico");
+				seq = (seq + 1 > 15? 0 : seq + 1);
+			} else {
+				struct mensagem erro;
+				cout << "erro ou nack ..." << endl;
+				// nack é um loop...
+				erro.ini = 0b01111110;
+				erro.dst = 0b01;
+				erro.src = 0b10;
+				erro.tam = 0; // arrumar o erro que veio
+				erro.seq = seq;
+				erro.tipo = 0b1111;
+				erro.paridade = erro.tam ^ erro.seq ^ erro.tipo;
+				if(send(soquete, pacote, (4+erro.tam)*4, 0)) 
+					perror("Diagnostico");
+			}
+	
 		} else if(strcmp(comando, "ls") == 0){
+			string dados;
+			int qt_msg, ls_tam;
+			cout << "chegou aqui!" << endl;
+			dados = ls(".");
+			ls_tam = dados.length();
+			
+			int tam_parte;
+
+			string parte;
+			struct mensagem *msg;
+
+			tam_parte = (ls_tam >= 15? 15 : ls_tam);
+			parte = dados.substr(0, tam_parte);
+			cout << parte << endl;
+			msg = monta_mensagem("ls_dados", (char *) parte.c_str(),  0b10, 0b01, seq);
+			pacote = monta_pacote(*msg);
+			if(send(soquete, pacote, (4+msg->tam)*4, 0))
+					perror("Diagnostico");
+
+
+			
+			do{
+				bytes = recv(soquete, pacote, 19, 0);
+				msg = desmonta_pacote(pacote);
+			} while((int)msg->src != 1);
+			cout << "chegou aqui!" << endl;
+			seq = (seq + 1 > 15? 0 : seq + 1);
+			// magic numbers...
+			for(int i = 15; i < ls_tam ; i+=15){
+				tam_parte = (ls_tam-i >= 15? 15 : ls_tam-i);
+				parte = dados.substr(i, tam_parte);
+				cout << parte << endl;
+				msg = monta_mensagem("ls_dados", (char *) parte.c_str(),  0b10, 0b01, seq);
+				pacote = monta_pacote(*msg);
+				if(send(soquete, pacote, (4+msg->tam)*4, 0))
+						perror("Diagnostico");
+			
+				
+				do{
+					bytes = recv(soquete, pacote, 19, 0);
+					msg = desmonta_pacote(pacote);
+				} while((int)msg->src != 1);
+				seq = (seq + 1 > 15? 0 : seq + 1);
+			}
+
+			msg = monta_mensagem("fim", NULL,  0b10, 0b01, seq);
+			pacote = monta_pacote(*msg);
+			if(send(soquete, pacote, (4+msg->tam)*4, 0))
+					perror("Diagnostico");
+			seq = (seq + 1 > 15? 0 : seq + 1);
+
 
 		} else if(strcmp(comando, "ver") == 0){
 
