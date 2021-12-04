@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #include <inttypes.h> 
 #include <string.h>
 
@@ -10,15 +12,15 @@ int calcula_paridade(struct mensagem msg){
 	
 }
 
-uint8_t* monta_pacote(struct mensagem msg){
-	uint8_t *pacote = (uint8_t *) calloc(4+msg.tam, sizeof(uint8_t));
-	pacote[0] = msg.ini;
-	pacote[1] = (msg.dst << 6) | (msg.src << 4) | msg.tam;
-	pacote[2] = (msg.seq << 4) | msg.tipo;
-	for(int i = 0; i < msg.tam; i++){
-		pacote[i+3] = msg.dados[i];
+uint8_t* monta_pacote(struct mensagem *msg){
+	uint8_t *pacote = (uint8_t *) calloc(4+msg->tam, sizeof(uint8_t));
+	pacote[0] = msg->ini;
+	pacote[1] = (msg->dst << 6) | (msg->src << 4) | msg->tam;
+	pacote[2] = (msg->seq << 4) | msg->tipo;
+	for(int i = 0; i < msg->tam; i++){
+		pacote[i+3] = msg->dados[i];
 	}
-	pacote[3+msg.tam] = msg.paridade;
+	pacote[3+msg->tam] = msg->paridade;
 
 	return pacote;
 }
@@ -39,17 +41,17 @@ struct mensagem* desmonta_pacote(uint8_t *pacote){
 	return msg;
 } 
 
-void imprime_mensagem(struct mensagem msg){
-	printf("%d\n", msg.ini );
-	printf("%d\n", msg.dst );
-	printf("%d\n", msg.src );
-	printf("%d\n", msg.tam );
-	printf("%d\n", msg.seq );
-	for(int i = 0; i < msg.tam; i++){
-		printf("%c", msg.dados[i]);
+void imprime_mensagem(struct mensagem *msg){
+	printf("ini: %d\n", msg->ini );
+	printf("dst: %d\n", msg->dst );
+	printf("src: %d\n", msg->src );
+	printf("tam: %d\n", msg->tam );
+	printf("seq: %d\n", msg->seq );
+	for(int i = 0; i < msg->tam; i++){
+		printf("%c", msg->dados[i]);
 	}
 	printf("\n");
-	printf("%d\n", msg.tipo);
+	printf("tipo: %s\n", string_mensagem(msg->tipo));
 }
 
 
@@ -138,4 +140,21 @@ struct mensagem *monta_mensagem(char *tipo, char *dados, int src, int dst, int s
 	}
 
 	return msg;
+}
+
+void envia_mensagem(int soquete, struct mensagem *msg){
+	uint8_t *pacote;
+
+	pacote = monta_pacote(msg);
+	send(soquete, pacote, (4+msg->tam)*4, 0);
+}
+
+struct mensagem *espera_mensagem(int soquete, int src){
+	struct mensagem *res;
+	uint8_t res_pacote[19];
+	do{
+		int bytes = recv(soquete, res_pacote, 19, 0);
+		res = desmonta_pacote(res_pacote);
+	}while((int)res->src != src);
+	return res;
 }

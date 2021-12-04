@@ -50,77 +50,53 @@ int main(){
 		struct mensagem *msg;
 		if(strcmp(comando, "cd") == 0){
 			struct mensagem *res;
-			uint8_t res_pacote[19];
 
 			char *arg = strtok(NULL, "\n");
 			msg = monta_mensagem(comando, arg, 0b01, 0b10, seq);
-			pacote = monta_pacote(*msg);
 			do{
-				if(send(soquete, pacote, (4+msg->tam)*4, 0)) // tem que multiplicar por 4 por alguma razao que nao descobri ainda
-					perror("Diagnostico");
-				do{
-					int bytes = recv(soquete, res_pacote, 19, 0);
-					res = desmonta_pacote(res_pacote);
-					printf("esperando resposta cd!\n");
-				}while(res->src != 0b10);
-				// if(res->tipo == 0b1111){
-				//	trata_erro(res);
-				// }
-			} while(res->tipo == 0b1001); // se for NACK, refaz o processo
+				envia_mensagem(soquete, msg);
+				res = espera_mensagem(soquete, 0b10);
+			} while(res->tipo == 0b1001);
 
-			std::cout << "ack recebido\n";
-			seq = (seq + 1 > 15? 0 : seq + 1);
+			cout << "ack recebido\n";
+			seq = (seq+1)%16;
 
 		} 
 		else if(strcmp(comando, "ls") == 0){
 			struct mensagem *res;
-			uint8_t res_pacote[19];
 			
 			msg = monta_mensagem(comando, NULL, 0b01, 0b10, seq);
-			pacote = monta_pacote(*msg);
 			do{
-				if(send(soquete, pacote, (4+msg->tam)*4, 0))
-					perror("Diagnostico");
-				do{
-					int bytes = recv(soquete, res_pacote, 19, 0);
-					res = desmonta_pacote(res_pacote);
-					// printf("esperando resposta ls!\n");
-				}while(res->src != 0b10);
-				// cout << "aqui?" << endl;
-				// if(res->tipo == 0b1111){
-				//	trata_erro(res);
-				// }
-			} while(res->tipo == 0b1001); // se for NACK, refaz o processo
-
-			std::cout << "ack recebido\n";
-			seq = (seq + 1 > 15? 0 : seq + 1);;
+				envia_mensagem(soquete, msg);
+				res = espera_mensagem(soquete, 0b10);
+			} while(res->tipo != 0b1011);
+			
+			seq = (seq+1)%16;
+			cout << "ls_dados recebido, seq = " << seq << endl;
 			string ls_res;
 			for(int i = 0; i < res->tam ; i++)
 			 	ls_res.push_back(res->dados[i]);
-			while(res->tipo != 0b1101){
-				msg = monta_mensagem("ack", NULL, 0b01, 0b10, seq);
-				pacote = monta_pacote(*msg);
 
-				send(soquete, pacote, (4+msg->tam)*4, 0);
+			do{
+				struct mensagem *ack;
+				ack = monta_mensagem("ack", NULL, 0b01, 0b10, seq);
+				envia_mensagem(soquete, msg);
 
-				do{
-					int bytes = recv(soquete, res_pacote, 19, 0);
-					res = desmonta_pacote(res_pacote);
-					// printf("esperando resposta ls_dados! %d\n", seq);
-				} while(res->src != 0b10);
-				
+				res = espera_mensagem(soquete, 0b10);
 				if(seq == res->seq){
 					cout << "res->tipo: " <<(int)res->tipo << endl;
-					seq = (seq + 1 > 15? 0 : seq + 1);
+					seq = (seq+1)%16;
 					for(int i = 0; i < res->tam ; i++)
 			 			ls_res.push_back(res->dados[i]);
 				}
+			} while(res->tipo != 0b1101);
 				
-			}
-			
+			msg = monta_mensagem("ack", NULL, 0b01, 0b10, seq);
+			envia_mensagem(soquete, msg);
+
 			cout << seq << ' ' << (int) res->seq << endl;
 			cout << ls_res << endl;
-			ls_res.clear();
+			//ls_res.clear();
 		}
 		// } else if(strcmp(comando, "ver") == 0){
 		// 	char *arg = strtok(NULL, "\n");
