@@ -56,7 +56,7 @@ int main(){
 			continue;
 		}
 		if(seq != res->seq){
-			cout << "ue? "<<(int) res->seq << endl;
+			//cout << "ue? "<<(int) res->seq << endl;
 			continue;
 		}
 		// se ta tudo ok, aumenta o seq	
@@ -138,17 +138,16 @@ int main(){
 			 	arquivo.push_back(i);
 			std::ifstream myfile(arquivo);
 			string linha;
-			int n_linha = 1;
+			int j = 1;
 			while(getline(myfile, linha)){
-				string dados =  std::to_string(n_linha) + ' ' + linha;
+				string dados =  std::to_string(j) + '\t' + linha + '\n';
 				int parte_tam, dados_tam;
 				string parte;
 
 				dados_tam = dados.length();
-				cout << dados_tam << endl;;
 				parte_tam = (dados_tam >= 15? 15 : dados_tam);
 				parte = dados.substr(0, parte_tam);
-
+				
 				msg = monta_mensagem("conteudo", (char *) parte.c_str(),  0b10, 0b01, seq);
 				do{
 					envia_mensagem(soquete, msg);
@@ -170,7 +169,7 @@ int main(){
 					seq = (seq + 1) % 16;			
 				}
 
-				n_linha++;
+				j++;
     		}
 			do{
 				msg = monta_mensagem("fim", NULL,  0b10, 0b01, seq);
@@ -184,11 +183,16 @@ int main(){
 			string arquivo;
 			for(int i: res->dados)
 			 	arquivo.push_back(i);
+			struct mensagem *ack = monta_mensagem("ack", NULL, 0b10, 0b01, seq);
+			
+			envia_mensagem(soquete, ack);
+			res = espera_mensagem(soquete, 0b01);
+
 			std::ifstream myfile(arquivo);
 			string linha;
-			int n_linha = 0;
+			int j = 0;
 			while(getline(myfile, linha)){
-				string dados =  std::to_string(n_linha) + ' ' + linha + '\n';
+				string dados =  std::to_string(j) + ' ' + linha + '\n';
 				int parte_tam, dados_tam;
 				string parte;
 
@@ -217,7 +221,7 @@ int main(){
 					seq = (seq + 1) % 16;			
 				}
 
-				n_linha++;
+				j++;
     		}
 			do{
 				msg = monta_mensagem("fim", NULL,  0b10, 0b01, seq);

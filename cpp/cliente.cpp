@@ -82,7 +82,6 @@ int main(){
 
 				res = espera_mensagem(soquete, 0b10);
 				if(seq == res->seq){
-					
 					seq = (seq+1)%16;
 					for(int i = 0; i < res->tam ; i++)
 			 			ls_res.push_back(res->dados[i]);
@@ -97,12 +96,11 @@ int main(){
 			struct mensagem *res;
 			char *arg = strtok(NULL, "\n");
 
-
 			msg = monta_mensagem(comando, arg, 0b01, 0b10, seq);
 			do{
 				envia_mensagem(soquete, msg);
 				res = espera_mensagem(soquete, 0b10);
-			} while(res->tipo == 0b1001);
+			} while(res->tipo != 0b1100);
 			
 			seq = (seq+1)%16;
 			string ls_res;
