@@ -124,10 +124,48 @@ int main(){
 			envia_mensagem(soquete, msg);
 
 			cout << ls_res << endl;
+		} else if(strcmp(comando, "linha") == 0){
+			struct mensagem *res;
+			char *linha = strtok(NULL, " ");
+			char *arquivo = strtok(NULL, "\n");
+			cout << linha << ' ' << arquivo << endl;
+			msg = monta_mensagem(comando, arquivo, 0b01, 0b10, seq);
+			do{
+				envia_mensagem(soquete, msg);
+				res = espera_mensagem(soquete, 0b10);
+			} while(res->tipo != 0b1000);
+
+			seq = (seq+1)%16;
+
+			msg = monta_mensagem("linha_dados", linha, 0b01, 0b10, seq);
+			do{
+				envia_mensagem(soquete, msg);
+				res = espera_mensagem(soquete, 0b10);
+			} while(res->tipo != 0b1100);
+
+			seq = (seq+1)%16;
+			string linha_res;
+			for(int i = 0; i < res->tam ; i++)
+			 	linha_res.push_back(res->dados[i]);
+
+			do{
+				struct mensagem *ack;
+				ack = monta_mensagem("ack", NULL, 0b01, 0b10, seq);
+				envia_mensagem(soquete, msg);
+
+				res = espera_mensagem(soquete, 0b10);
+				if(seq == res->seq){
+					seq = (seq+1)%16;
+					for(int i = 0; i < res->tam ; i++)
+			 			linha_res.push_back(res->dados[i]);
+				}
+			} while(res->tipo != 0b1101);
+				
+			msg = monta_mensagem("ack", NULL, 0b01, 0b10, seq);
+			envia_mensagem(soquete, msg);
+
+			cout << linha_res << endl;
 		}
-		// } else if(strcmp(comando, "linha") == 0){
-		// 	char *linha = strtok(NULL, " \n");
-		// 	char *arquivo = strtok(NULL, " \n");
 		// 	msg = monta_mensagem(comando, arquivo, 0b10, seq);
 		// 	fila.push(msg);
 		// 	msg = monta_mensagem(comando, linha, 0b10, seq);

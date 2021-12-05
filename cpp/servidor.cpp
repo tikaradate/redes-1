@@ -181,47 +181,56 @@ int main(){
 
 		} else if(strcmp(comando, "linha") == 0){
 			string arquivo;
+			imprime_mensagem(res);
 			for(int i: res->dados)
 			 	arquivo.push_back(i);
+
 			struct mensagem *ack = monta_mensagem("ack", NULL, 0b10, 0b01, seq);
-			
 			envia_mensagem(soquete, ack);
-			res = espera_mensagem(soquete, 0b01);
+			seq = (seq + 1) % 16;
+			do{
+				res = espera_mensagem(soquete, 0b01);
+			} while(res->seq != seq);
 
+			imprime_mensagem(res);
 			std::ifstream myfile(arquivo);
-			string linha;
+			string linha, n_linha;
+
+			for(int i: res->dados)
+			 	n_linha.push_back(i);
+
 			int j = 0;
-			while(getline(myfile, linha)){
-				string dados =  std::to_string(j) + ' ' + linha + '\n';
-				int parte_tam, dados_tam;
-				string parte;
+			while(getline(myfile, linha) && j < stoi(n_linha)){
+				j++;
+			}
+			
+			string dados = linha + '\n';
+			int parte_tam, dados_tam;
+			string parte;
 
-				dados_tam = dados.length();
-				parte_tam = (dados_tam >= 15? 15 : dados_tam);
-				parte = dados.substr(0, parte_tam);
+			dados_tam = dados.length();
+			parte_tam = (dados_tam >= 15? 15 : dados_tam);
+			parte = dados.substr(0, parte_tam);
 
+			msg = monta_mensagem("conteudo", (char *) parte.c_str(),  0b10, 0b01, seq);
+			do{
+				envia_mensagem(soquete, msg);
+				res = espera_mensagem(soquete, 0b01);
+			} while(res->tipo == 0b1001);
+
+			seq = (seq + 1) % 16;
+
+			for(int i = 15; i < dados_tam; i+=15){
+				parte_tam = (dados_tam-i >= 15? 15 : dados_tam-i);
+				parte = dados.substr(i, parte_tam);
 				msg = monta_mensagem("conteudo", (char *) parte.c_str(),  0b10, 0b01, seq);
+
 				do{
 					envia_mensagem(soquete, msg);
 					res = espera_mensagem(soquete, 0b01);
 				} while(res->tipo == 0b1001);
-
-				seq = (seq + 1) % 16;
-
-				for(int i = 15; i < dados_tam; i+=15){
-					parte_tam = (dados_tam-i >= 15? 15 : dados_tam-i);
-					parte = dados.substr(i, parte_tam);
-					msg = monta_mensagem("conteudo", (char *) parte.c_str(),  0b10, 0b01, seq);
-
-					do{
-						envia_mensagem(soquete, msg);
-						res = espera_mensagem(soquete, 0b01);
-					} while(res->tipo == 0b1001);
-				
-					seq = (seq + 1) % 16;			
-				}
-
-				j++;
+			
+				seq = (seq + 1) % 16;			
     		}
 			do{
 				msg = monta_mensagem("fim", NULL,  0b10, 0b01, seq);
