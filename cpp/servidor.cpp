@@ -11,6 +11,8 @@
 
 #include <inttypes.h> 
 #include <iostream>
+#include <fstream>
+#include <string>
 
 #include <dirent.h>
 #include <unistd.h>
@@ -23,6 +25,7 @@
 using std::cout;
 using std::endl;
 using std::string;
+
 
 #define ENVIA 1
 #define RECEBE -1
@@ -60,7 +63,7 @@ int main(){
 		char *comando = string_mensagem(res->tipo);
 		cout << comando << endl;
 		if(strcmp(comando, "cd") == 0){
-			std::string dir;
+			string dir;
 			for(int i: res->dados)
 			 	dir.push_back(i);
 			cout << "diretorio:" <<  dir << endl;
@@ -70,7 +73,6 @@ int main(){
 				struct mensagem *ack;
 				char buff[100];
 				printf("Diretorio atual: %s\n", getcwd(buff, 100));
-				cout << "ack!" << endl;
 				ack = monta_mensagem("ack", NULL, 0b10, 0b01, seq);
 				envia_mensagem(soquete, ack);
 				seq = (seq+1)%16;
@@ -91,16 +93,16 @@ int main(){
 	
 		} else if(strcmp(comando, "ls") == 0){
 			string dados;
-			int qt_msg, ls_tam, tam_parte;
+			int qt_msg, ls_tam, parte_tam;
 			dados = ls(".");
 			ls_tam = dados.length();
 
 			string parte;
 			struct mensagem *res, *msg;
 
-			tam_parte = (ls_tam >= 15? 15 : ls_tam);
-			parte = dados.substr(0, tam_parte);
-			cout << parte << endl;
+			parte_tam = (ls_tam >= 15? 15 : ls_tam);
+			parte = dados.substr(0, parte_tam);
+
 			msg = monta_mensagem("ls_dados", (char *) parte.c_str(),  0b10, 0b01, seq);
 			do{
 				envia_mensagem(soquete, msg);
@@ -108,12 +110,10 @@ int main(){
 			} while(res->tipo == 0b1001);
 
 			seq = (seq + 1) % 16;
-			
-			cout << "seq: " << seq << ", msg-seq: "<< (int) msg->tipo << endl;	
+
 			for(int i = 15; i < ls_tam; i+=15){
-				tam_parte = (ls_tam-i >= 15? 15 : ls_tam-i);
-				parte = dados.substr(i, tam_parte);
-				cout << parte << endl;
+				parte_tam = (ls_tam-i >= 15? 15 : ls_tam-i);
+				parte = dados.substr(i, parte_tam);
 				msg = monta_mensagem("ls_dados", (char *) parte.c_str(),  0b10, 0b01, seq);
 
 				do{
@@ -131,12 +131,101 @@ int main(){
 			} while(res->tipo == 0b1001);
 
 			seq = (seq + 1) % 16;
-			cout << seq << endl;
 
 		} else if(strcmp(comando, "ver") == 0){
+			string arquivo;
+			for(int i: res->dados)
+			 	arquivo.push_back(i);
+			std::ifstream myfile(arquivo);
+			string linha;
+			int n_linha = 1;
+			while(getline(myfile, linha)){
+				string dados =  std::to_string(n_linha) + ' ' + linha;
+				int parte_tam, dados_tam;
+				string parte;
+
+				dados_tam = dados.length();
+				cout << dados_tam << endl;;
+				parte_tam = (dados_tam >= 15? 15 : dados_tam);
+				parte = dados.substr(0, parte_tam);
+
+				msg = monta_mensagem("conteudo", (char *) parte.c_str(),  0b10, 0b01, seq);
+				do{
+					envia_mensagem(soquete, msg);
+					res = espera_mensagem(soquete, 0b01);
+				} while(res->tipo == 0b1001);
+
+				seq = (seq + 1) % 16;
+
+				for(int i = 15; i < dados_tam; i+=15){
+					parte_tam = (dados_tam-i >= 15? 15 : dados_tam-i);
+					parte = dados.substr(i, parte_tam);
+					msg = monta_mensagem("conteudo", (char *) parte.c_str(),  0b10, 0b01, seq);
+
+					do{
+						envia_mensagem(soquete, msg);
+						res = espera_mensagem(soquete, 0b01);
+					} while(res->tipo == 0b1001);
+				
+					seq = (seq + 1) % 16;			
+				}
+
+				n_linha++;
+    		}
+			do{
+				msg = monta_mensagem("fim", NULL,  0b10, 0b01, seq);
+				envia_mensagem(soquete, msg);
+				res = espera_mensagem(soquete, 0b01);
+			} while(res->tipo == 0b1001);
+
+			seq = (seq + 1) % 16;
 
 		} else if(strcmp(comando, "linha") == 0){
+			string arquivo;
+			for(int i: res->dados)
+			 	arquivo.push_back(i);
+			std::ifstream myfile(arquivo);
+			string linha;
+			int n_linha = 0;
+			while(getline(myfile, linha)){
+				string dados =  std::to_string(n_linha) + ' ' + linha + '\n';
+				int parte_tam, dados_tam;
+				string parte;
 
+				dados_tam = dados.length();
+				parte_tam = (dados_tam >= 15? 15 : dados_tam);
+				parte = dados.substr(0, parte_tam);
+
+				msg = monta_mensagem("conteudo", (char *) parte.c_str(),  0b10, 0b01, seq);
+				do{
+					envia_mensagem(soquete, msg);
+					res = espera_mensagem(soquete, 0b01);
+				} while(res->tipo == 0b1001);
+
+				seq = (seq + 1) % 16;
+
+				for(int i = 15; i < dados_tam; i+=15){
+					parte_tam = (dados_tam-i >= 15? 15 : dados_tam-i);
+					parte = dados.substr(i, parte_tam);
+					msg = monta_mensagem("conteudo", (char *) parte.c_str(),  0b10, 0b01, seq);
+
+					do{
+						envia_mensagem(soquete, msg);
+						res = espera_mensagem(soquete, 0b01);
+					} while(res->tipo == 0b1001);
+				
+					seq = (seq + 1) % 16;			
+				}
+
+				n_linha++;
+    		}
+			do{
+				msg = monta_mensagem("fim", NULL,  0b10, 0b01, seq);
+				envia_mensagem(soquete, msg);
+				res = espera_mensagem(soquete, 0b01);
+			} while(res->tipo == 0b1001);
+
+			seq = (seq + 1) % 16;
 		} else if(strcmp(comando, "linhas") == 0){
 
 		} else if(strcmp(comando, "edit") == 0){

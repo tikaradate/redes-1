@@ -43,7 +43,7 @@ int main(){
 		char linha[1024];
 		char *str = fgets(linha, 1024, stdin);
 		if(!str){
-			perror("Erro ao ler");
+			perror("Erro ao ler comando");
 			exit(1);
 		}
 		char *comando = strtok(str, " \n");
@@ -58,7 +58,6 @@ int main(){
 				res = espera_mensagem(soquete, 0b10);
 			} while(res->tipo == 0b1001);
 
-			cout << "ack recebido\n";
 			seq = (seq+1)%16;
 
 		} 
@@ -72,7 +71,6 @@ int main(){
 			} while(res->tipo != 0b1011);
 			
 			seq = (seq+1)%16;
-			cout << "ls_dados recebido, seq = " << seq << endl;
 			string ls_res;
 			for(int i = 0; i < res->tam ; i++)
 			 	ls_res.push_back(res->dados[i]);
@@ -84,7 +82,7 @@ int main(){
 
 				res = espera_mensagem(soquete, 0b10);
 				if(seq == res->seq){
-					cout << "res->tipo: " <<(int)res->tipo << endl;
+					
 					seq = (seq+1)%16;
 					for(int i = 0; i < res->tam ; i++)
 			 			ls_res.push_back(res->dados[i]);
@@ -94,14 +92,41 @@ int main(){
 			msg = monta_mensagem("ack", NULL, 0b01, 0b10, seq);
 			envia_mensagem(soquete, msg);
 
-			cout << seq << ' ' << (int) res->seq << endl;
 			cout << ls_res << endl;
-			//ls_res.clear();
+		} else if(strcmp(comando, "ver") == 0){
+			struct mensagem *res;
+			char *arg = strtok(NULL, "\n");
+
+
+			msg = monta_mensagem(comando, arg, 0b01, 0b10, seq);
+			do{
+				envia_mensagem(soquete, msg);
+				res = espera_mensagem(soquete, 0b10);
+			} while(res->tipo == 0b1001);
+			
+			seq = (seq+1)%16;
+			string ls_res;
+			for(int i = 0; i < res->tam ; i++)
+			 	ls_res.push_back(res->dados[i]);
+
+			do{
+				struct mensagem *ack;
+				ack = monta_mensagem("ack", NULL, 0b01, 0b10, seq);
+				envia_mensagem(soquete, msg);
+
+				res = espera_mensagem(soquete, 0b10);
+				if(seq == res->seq){
+					seq = (seq+1)%16;
+					for(int i = 0; i < res->tam ; i++)
+			 			ls_res.push_back(res->dados[i]);
+				}
+			} while(res->tipo != 0b1101);
+				
+			msg = monta_mensagem("ack", NULL, 0b01, 0b10, seq);
+			envia_mensagem(soquete, msg);
+
+			cout << ls_res << endl;
 		}
-		// } else if(strcmp(comando, "ver") == 0){
-		// 	char *arg = strtok(NULL, "\n");
-		// 	msg = monta_mensagem(comando, arg, 0b10, seq);
-		// 	fila.push(msg);
 		// } else if(strcmp(comando, "linha") == 0){
 		// 	char *linha = strtok(NULL, " \n");
 		// 	char *arquivo = strtok(NULL, " \n");
