@@ -14,32 +14,26 @@
 
 #include <inttypes.h> 
 
-#include <queue>
+#include <vector>
 
 #include <iostream>
 
 using std::cout;
 using std::endl;
 using std::string;
+using std::vector;
 
 
 #include "mensagem.h"
 #include "comms.h"
-
-#define ENVIA 1
-#define RECEBE -1
+#include "funcoes_cliente.h"
 
 int main(){
 	int soquete;
  	soquete = raw_socket("lo");
-	int estado = ENVIA;
 	int seq = 0;
 	uint8_t *pacote;
-	std::queue<struct mensagem*> fila;
-	while(1==1){	
-		// se não estiver vazia a fila, checa por mensagens e 
-		// retira a mensagem da fila ao receber um ACK
-		// se receber um NACK, reenvia a mensagem no topo da fila :)	
+	while(2!=1){
 		char linha[1024];
 		char *str = fgets(linha, 1024, stdin);
 		if(!str){
@@ -49,154 +43,64 @@ int main(){
 		char *comando = strtok(str, " \n");
 		struct mensagem *msg;
 		if(strcmp(comando, "cd") == 0){
-			struct mensagem *res;
-
-			char *arg = strtok(NULL, "\n");
-			msg = monta_mensagem(comando, arg, 0b01, 0b10, seq);
-			do{
-				envia_mensagem(soquete, msg);
-				res = espera_mensagem(soquete, 0b10);
-			} while(res->tipo == 0b1001);
-
-			seq = (seq+1)%16;
-
-		} 
-		else if(strcmp(comando, "ls") == 0){
-			struct mensagem *res;
-			
-			msg = monta_mensagem(comando, NULL, 0b01, 0b10, seq);
-			do{
-				envia_mensagem(soquete, msg);
-				res = espera_mensagem(soquete, 0b10);
-			} while(res->tipo != 0b1011);
-			
-			seq = (seq+1)%16;
-			string ls_res;
-			for(int i = 0; i < res->tam ; i++)
-			 	ls_res.push_back(res->dados[i]);
-
-			do{
-				struct mensagem *ack;
-				ack = monta_mensagem("ack", NULL, 0b01, 0b10, seq);
-				envia_mensagem(soquete, msg);
-
-				res = espera_mensagem(soquete, 0b10);
-				if(seq == res->seq){
-					seq = (seq+1)%16;
-					for(int i = 0; i < res->tam ; i++)
-			 			ls_res.push_back(res->dados[i]);
-				}
-			} while(res->tipo != 0b1101);
-				
-			msg = monta_mensagem("ack", NULL, 0b01, 0b10, seq);
-			envia_mensagem(soquete, msg);
-
-			cout << ls_res << endl;
+			string diretorio = strtok(NULL, "\n");
+			cd_cliente(soquete, &seq, diretorio);
+		} else if(strcmp(comando, "ls") == 0){
+			string ls;
+			ls = ls_cliente(soquete, &seq);
+			cout << ls << endl;
 		} else if(strcmp(comando, "ver") == 0){
-			struct mensagem *res;
-			char *arg = strtok(NULL, "\n");
+			string ver_res;
+			string arquivo = strtok(NULL, "\n");
+			ver_res = ver_cliente(soquete, &seq, arquivo);
 
-			msg = monta_mensagem(comando, arg, 0b01, 0b10, seq);
-			do{
-				envia_mensagem(soquete, msg);
-				res = espera_mensagem(soquete, 0b10);
-			} while(res->tipo != 0b1100);
-			
-			seq = (seq+1)%16;
-			string ls_res;
-			for(int i = 0; i < res->tam ; i++)
-			 	ls_res.push_back(res->dados[i]);
-
-			do{
-				struct mensagem *ack;
-				ack = monta_mensagem("ack", NULL, 0b01, 0b10, seq);
-				envia_mensagem(soquete, msg);
-
-				res = espera_mensagem(soquete, 0b10);
-				if(seq == res->seq){
-					seq = (seq+1)%16;
-					for(int i = 0; i < res->tam ; i++)
-			 			ls_res.push_back(res->dados[i]);
-				}
-			} while(res->tipo != 0b1101);
-				
-			msg = monta_mensagem("ack", NULL, 0b01, 0b10, seq);
-			envia_mensagem(soquete, msg);
-
-			cout << ls_res << endl;
+			cout << ver_res << endl;
 		} else if(strcmp(comando, "linha") == 0){
-			struct mensagem *res;
-			char *linha = strtok(NULL, " ");
-			char *arquivo = strtok(NULL, "\n");
-			cout << linha << ' ' << arquivo << endl;
-			msg = monta_mensagem(comando, arquivo, 0b01, 0b10, seq);
-			do{
-				envia_mensagem(soquete, msg);
-				res = espera_mensagem(soquete, 0b10);
-			} while(res->tipo != 0b1000);
-
-			seq = (seq+1)%16;
-
-			msg = monta_mensagem("linha_dados", linha, 0b01, 0b10, seq);
-			do{
-				envia_mensagem(soquete, msg);
-				res = espera_mensagem(soquete, 0b10);
-			} while(res->tipo != 0b1100);
-
-			seq = (seq+1)%16;
 			string linha_res;
-			for(int i = 0; i < res->tam ; i++)
-			 	linha_res.push_back(res->dados[i]);
-
-			do{
-				struct mensagem *ack;
-				ack = monta_mensagem("ack", NULL, 0b01, 0b10, seq);
-				envia_mensagem(soquete, msg);
-
-				res = espera_mensagem(soquete, 0b10);
-				if(seq == res->seq){
-					seq = (seq+1)%16;
-					for(int i = 0; i < res->tam ; i++)
-			 			linha_res.push_back(res->dados[i]);
-				}
-			} while(res->tipo != 0b1101);
-				
-			msg = monta_mensagem("ack", NULL, 0b01, 0b10, seq);
-			envia_mensagem(soquete, msg);
-
+			string linha = strtok(NULL, " ");
+			string arquivo = strtok(NULL, "\n");
+			
+			linha_res = linha_cliente(soquete, &seq, arquivo, linha);
 			cout << linha_res << endl;
+		} else if(strcmp(comando, "linhas") == 0){
+			string linhas_res;
+			string linha_inicial = strtok(NULL, " ");
+			string linha_final = strtok(NULL, " ");
+			string arquivo = strtok(NULL, "\n");
+			
+			linhas_res = linhas_cliente(soquete, &seq,arquivo, linha_inicial, linha_final);
+			cout << linhas_res << endl;
+		} else if(strcmp(comando, "edit") == 0){
+			string edit_res;
+			string linha = strtok(NULL, " ");
+			string arquivo = strtok(NULL, " ");
+			string texto = strtok(NULL, "\n");
+
+			edit_cliente(soquete, &seq, arquivo, linha, texto);
+		} else if(strcmp(comando, "compilar") == 0){
+			char *argumento;
+			string compilar_res, arquivo, opcoes;
+			vector<string> compilar_args;
+
+			// necessário um tratamento para pegar as opcoes
+			argumento = strtok(NULL, " ");
+			while(argumento){
+				compilar_args.push_back(argumento);
+				argumento = strtok(NULL, " ");
+			}
+
+			// pega o ultimo argumento, que é o arquivo
+			arquivo = compilar_args.back();
+			compilar_args.pop_back();
+			// vai pegando as opcoes até acabar
+			while(!compilar_args.empty()){
+				opcoes.append(compilar_args.back() + ' ');
+				compilar_args.pop_back();
+			}
+
+			compilar_res = compilar_cliente(soquete, &seq, arquivo, opcoes);
+
+			cout << compilar_res << endl;
 		}
-		// 	msg = monta_mensagem(comando, arquivo, 0b10, seq);
-		// 	fila.push(msg);
-		// 	msg = monta_mensagem(comando, linha, 0b10, seq);
-		// 	fila.push(msg);
-		// } else if(strcmp(comando, "linhas") == 0){
-		// 	char *linha_ini = strtok(NULL, " \n");
-		// 	char *linha_fim = strtok(NULL, " \n");
-		// 	char *arquivo = strtok(NULL, " \n");
-		// 	msg = monta_mensagem(comando, arquivo, 0b10, seq);
-		// 	fila.push(msg);
-		// 	msg = monta_mensagem(comando, linha, 0b10, seq);
-		// 	fila.push(msg);
-		// } else if(strcmp(comando, "edit") == 0){
-		// 	// tem que tratar diferente?
-		// 	// tipo a parte do texto la
-		// 	char *linha_ini = strtok(NULL, " \n");
-		// 	char *linha_fim = strtok(NULL, " \n");
-		// 	char *arquivo = strtok(NULL, " \n");
-		// 	msg = monta_mensagem(comando, arquivo, 0b10, seq);
-		// 	fila.push(msg);
-		// 	msg = monta_mensagem(comando, linha, 0b10, seq);
-		// 	fila.push(msg);
-		// } else if(strcmp(comando, "compilar") == 0){
-			// tem que tratar diferente
-			// ler as opcoes e dps separar o nome do arquivo
-		// 	char *opcoes = strtok(NULL, " \n");
-		// 	char *arquivo = strtok(NULL, " \n");
-		// 	msg = monta_mensagem(comando, arquivo, 0b10, seq);
-		// 	fila.push(msg);
-		// 	msg = monta_mensagem(comando, linha, 0b10, seq);
-		// 	fila.push(msg);
-		// }
 	}
 }

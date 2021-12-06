@@ -1,4 +1,8 @@
 #include <inttypes.h>
+#include <string>
+
+using std::string;
+
 struct mensagem{
 	uint8_t ini;
 	uint8_t dst;
@@ -18,12 +22,11 @@ void imprime_mensagem(struct mensagem *msg);
 
 int calcula_paridade(struct mensagem msg);
 
-int tipo_mensagem(char *tipo);
+int tipo_mensagem(string tipo);
 
-char *string_mensagem(int b_tipo);
+string string_mensagem(int tipo);
 
-struct mensagem *monta_mensagem(char *tipo, char *dados, int src, int dst, int seq);
-
+struct mensagem *monta_mensagem(string tipo, string dados, int src, int dst, int seq);
 
 void envia_mensagem(int soquete, struct mensagem *msg);
 

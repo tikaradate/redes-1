@@ -3,7 +3,7 @@ CXXFLAGS = -Wall -Wextra -g
 
     PROG1 = cliente
 	PROG2 = servidor
-    OBJS = comms.o mensagem.o list.o
+    OBJS = comms.o mensagem.o list.o funcoes_cliente.o funcoes_servidor.o
 
 .PHONY: clean all
 

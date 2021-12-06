@@ -7,7 +7,7 @@ using std::string;
 using namespace std;
 
 int main(){
-"isso funciona?"
+isso funciona?
     ifstream myfile(arquivo);
     string line;
     int i = 1;

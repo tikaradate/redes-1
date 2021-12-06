@@ -3,10 +3,12 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <inttypes.h> 
-#include <string.h>
+#include <string>
+#include <cstring>
 
 #include "mensagem.h"
 
+using std::string;
 
 int calcula_paridade(struct mensagem msg){
 	
@@ -51,87 +53,85 @@ void imprime_mensagem(struct mensagem *msg){
 		printf("%c", msg->dados[i]);
 	}
 	printf("\n");
-	printf("tipo: %s\n", string_mensagem(msg->tipo));
+	printf("tipo: %d\n", msg->tipo);
 }
 
 
-int tipo_mensagem(char *tipo){
-	if(strcmp(tipo, "cd") == 0){
+int tipo_mensagem(string tipo){
+	if(tipo == "cd"){
 		return 0b0000;
-	} else if (strcmp(tipo, "ls") == 0){
+	} else if (tipo == "ls"){
 		return 0b0001;
-	} else if (strcmp(tipo, "ver") == 0){
+	} else if (tipo == "ver"){
 		return 0b0010;
-	} else if (strcmp(tipo, "linha") == 0){
+	} else if (tipo == "linha"){
 		return 0b0011;
-	} else if (strcmp(tipo, "linhas") == 0){
+	} else if (tipo == "linhas"){
 		return 0b0100;
-	} else if (strcmp(tipo, "edit") == 0){
+	} else if (tipo == "edit"){
 		return 0b0101;
-	} else if (strcmp(tipo, "compilar") == 0){
+	} else if (tipo == "compilar"){
 		return 0b0110;
-	} else if (strcmp(tipo, "ack") == 0){
+	} else if (tipo == "ack"){
 		return 0b1000;
-	} else if (strcmp(tipo, "nack") == 0){
+	} else if (tipo == "nack"){
 		return 0b1001;
-	} else if (strcmp(tipo, "linha_dados") == 0){
+	} else if (tipo == "linha_dados"){
 		return 0b1010;
-	} else if (strcmp(tipo, "ls_dados") == 0){
+	} else if (tipo == "ls_dados"){
 		return 0b1011;
-	} else if (strcmp(tipo, "conteudo") == 0){
+	} else if (tipo == "conteudo"){
 		return 0b1100;
-	} else if (strcmp(tipo, "fim") == 0){
+	} else if (tipo == "fim"){
 		return 0b1101;
-	} else if (strcmp(tipo, "erro") == 0){
+	} else if (tipo == "erro"){
 		return 0b1111;
 	}
 } 
 
-// talvez não estritamente necessário
-char *string_mensagem(int b_tipo){
-	switch (b_tipo){
+string string_mensagem(int tipo){
+	switch (tipo)
+	{
 	case 0b0000:
 		return "cd";
 	case 0b0001:
-	    return "ls";
+		return "ls";
 	case 0b0010:
-	  	return "ver";
+		return "ver";
 	case 0b0011:
-	  	return "linha";
+		return "linha";
 	case 0b0100:
-	  	return "linhas";
+		return "linhas";
 	case 0b0101:
-	  	return "edit";
+		return "edit";
 	case 0b0110:
-	  	return "compilar";
+		return "compilar";
 	case 0b1000:
 		return "ack";
 	case 0b1001:
-	    return "nack";
+		return "nack";
 	case 0b1010:
-	  	return "linha_dados";
+		return "linha_dados";
 	case 0b1011:
-	  	return "ls_dados";
+		return "ls_dados";
 	case 0b1100:
-	  	return "conteudo";
+		return "conteudo";
 	case 0b1101:
-	  	return "fim";
+		return "fim";
 	case 0b1111:
-	  	return "erro";
-		default:
-		break;
+		return "erro";
 	}
-} 
+}
 
-struct mensagem *monta_mensagem(char *tipo, char *dados, int src, int dst, int seq){
+struct mensagem *monta_mensagem(string tipo, string dados, int src, int dst, int seq){
 	struct mensagem *msg = (struct mensagem *) malloc(sizeof(struct mensagem));
 	
 	msg->ini = 0b01111110;
 	msg->dst = dst;
 	msg->src = src;
 	msg->tipo = tipo_mensagem(tipo);
-	if(!dados) msg->tam = 0;
-	else msg->tam = strlen(dados);
+	if(dados.empty()) msg->tam = 0;
+	else msg->tam = dados.length();
 	msg->seq = seq;
 	msg->paridade = msg->tam ^ msg->seq ^ msg->tipo;
 	for(int i = 0; i < msg->tam; i++){
@@ -155,6 +155,7 @@ struct mensagem *espera_mensagem(int soquete, int src){
 	do{
 		int bytes = recv(soquete, res_pacote, 19, 0);
 		res = desmonta_pacote(res_pacote);
+
 	}while((int)res->src != src);
 	return res;
 }
