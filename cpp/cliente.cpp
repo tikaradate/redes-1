@@ -11,22 +11,21 @@
 #include <stdio.h>
 #include <errno.h>
 #include <unistd.h>
-
 #include <inttypes.h> 
 
 #include <vector>
-
 #include <iostream>
+
+#include "list.h"
+#include "mensagem.h"
+#include "comms.h"
+#include "funcoes_cliente.h"
 
 using std::cout;
 using std::endl;
 using std::string;
 using std::vector;
 
-
-#include "mensagem.h"
-#include "comms.h"
-#include "funcoes_cliente.h"
 
 int main(){
 	int soquete;
@@ -102,6 +101,11 @@ int main(){
 			compilar_res = compilar_cliente(soquete, &seq, arquivo, opcoes);
 
 			cout << compilar_res << endl;
+		} else if(strcmp(comando, "lcd") == 0){
+			string diretorio = strtok(NULL, "\n");
+			chdir(diretorio.c_str());
+		} else if(strcmp(comando, "lls") == 0){
+			cout << ls(".");
 		}
 	}
 }

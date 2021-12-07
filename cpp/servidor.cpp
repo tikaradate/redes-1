@@ -49,7 +49,6 @@ int main(){
 			continue;
 		}
 		if(seq != res->seq){
-			//cout << "ue? "<<(int) res->seq << endl;
 			continue;
 		}
 		// se ta tudo ok, aumenta o seq	
