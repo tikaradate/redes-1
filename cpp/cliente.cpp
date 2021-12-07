@@ -91,6 +91,7 @@ int main(){
 
 			// pega o ultimo argumento, que é o arquivo
 			arquivo = compilar_args.back();
+			arquivo.pop_back();
 			compilar_args.pop_back();
 			// vai pegando as opcoes até acabar
 			while(!compilar_args.empty()){

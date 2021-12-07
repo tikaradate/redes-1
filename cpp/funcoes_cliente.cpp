@@ -225,7 +225,7 @@ void edit_cliente(int soquete, int *seq, string arquivo, string linha, string te
 string compilar_cliente(int soquete, int *seq, string arquivo, string opcoes){
     struct mensagem *msg;
     struct mensagem *res;
-    string edit_res, parte;
+    string edit_res, parte, compilar_res;
     int parte_tam, opcoes_tam;
 
     msg = monta_mensagem("compilar", arquivo, 0b01, 0b10, *seq);
@@ -254,9 +254,35 @@ string compilar_cliente(int soquete, int *seq, string arquivo, string opcoes){
         msg = monta_mensagem("fim", "",   0b01, 0b10, *seq);
         envia_mensagem(soquete, msg);
         res = espera_mensagem(soquete, 0b10);
-    } while(res->tipo == 0b1001);
+    } while(res->tipo == 0b1100);
 
     *seq = (*seq + 1) % 16;
+
+    // aguarda o conteúdo ou erro após enviar tudo do compilar
+    do{
+        res = espera_mensagem(soquete, 0b10);
+    } while(res->tipo != 0b1100);
+
+    for(int i = 0; i < res->tam ; i++)
+        compilar_res.push_back(res->dados[i]);
+
+    do{
+        struct mensagem *ack;
+        ack = monta_mensagem("ack", "", 0b01, 0b10, *seq);
+        envia_mensagem(soquete, msg);
+
+        res = espera_mensagem(soquete, 0b10);
+        if(*seq == res->seq){
+            *seq = (*seq+1)%16;
+            for(int i = 0; i < res->tam ; i++)
+                compilar_res.push_back(res->dados[i]);
+        }
+    } while(res->tipo != 0b1101);
+        
+    msg = monta_mensagem("ack", "", 0b01, 0b10, *seq);
+    envia_mensagem(soquete, msg);
+
+    return compilar_res;
 }
 
 #endif

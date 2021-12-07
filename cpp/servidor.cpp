@@ -27,14 +27,6 @@ using std::cout;
 using std::endl;
 using std::string;
 
-
-#define ENVIA 1
-#define RECEBE -1
-
-// void envia_nack(){
-
-// }
-
 int main(){
 	int soquete;
 	soquete = raw_socket("lo");
@@ -113,7 +105,7 @@ int main(){
 			parte_tam = (dados_tam >= 15? 15 : dados_tam);
 			parte = dados.substr(0, parte_tam);
 
-			msg = monta_mensagem("conteudo", (char *) parte.c_str(),  0b10, 0b01, seq);
+			msg = monta_mensagem("conteudo", parte,  0b10, 0b01, seq);
 			do{
 				envia_mensagem(soquete, msg);
 				res = espera_mensagem(soquete, 0b01);
@@ -124,7 +116,7 @@ int main(){
 			for(int i = 15; i < dados_tam; i+=15){
 				parte_tam = (dados_tam-i >= 15? 15 : dados_tam-i);
 				parte = dados.substr(i, parte_tam);
-				msg = monta_mensagem("conteudo", (char *) parte.c_str(),  0b10, 0b01, seq);
+				msg = monta_mensagem("conteudo", parte,  0b10, 0b01, seq);
 
 				do{
 					envia_mensagem(soquete, msg);
@@ -178,7 +170,7 @@ int main(){
 				parte_tam = (dados_tam >= 15? 15 : dados_tam);
 				parte = dados.substr(0, parte_tam);
 
-				msg = monta_mensagem("conteudo", (char *) parte.c_str(),  0b10, 0b01, seq);
+				msg = monta_mensagem("conteudo", parte,  0b10, 0b01, seq);
 				do{
 					envia_mensagem(soquete, msg);
 					res = espera_mensagem(soquete, 0b01);
@@ -189,7 +181,7 @@ int main(){
 				for(int i = 15; i < dados_tam; i+=15){
 					parte_tam = (dados_tam-i >= 15? 15 : dados_tam-i);
 					parte = dados.substr(i, parte_tam);
-					msg = monta_mensagem("conteudo", (char *) parte.c_str(),  0b10, 0b01, seq);
+					msg = monta_mensagem("conteudo", parte,  0b10, 0b01, seq);
 
 					do{
 						envia_mensagem(soquete, msg);
@@ -272,11 +264,65 @@ int main(){
 			envia_mensagem(soquete, ack);
 			
 			// cout << flags << endl;
-			string gcc = "gcc " + flags + arquivo;
-			cout << gcc << endl;
-			// system(gcc.c_str());
-			// mandar para um arquivo temporário a saída e então
-			// enviar para o cliente
+			string gcc_comando = "gcc " + flags + arquivo + " 2>&1";
+			cout << gcc_comando << endl;
+			
+			// FILE *fp = popen((char *) gcc_comando.c_str(), "r");
+			char buf[128];
+			string compilar_res;
+			FILE *fp;
+
+			if ((fp = popen((char *) gcc_comando.c_str(), "r")) == NULL) {
+				printf("Error opening pipe!\n");
+				return -1;
+			}
+
+			while (fgets(buf, 128, fp) != NULL) {
+				string dados =  buf;
+				int parte_tam, dados_tam;
+				string parte;
+
+				dados_tam = dados.length();
+				parte_tam = (dados_tam >= 15? 15 : dados_tam);
+				parte = dados.substr(0, parte_tam);
+				
+				msg = monta_mensagem("conteudo", (char *) parte.c_str(),  0b10, 0b01, seq);
+				do{
+					envia_mensagem(soquete, msg);
+					res = espera_mensagem(soquete, 0b01);
+				} while(res->tipo == 0b1001);
+
+				seq = (seq + 1) % 16;
+
+				for(int i = 15; i < dados_tam; i+=15){
+					parte_tam = (dados_tam-i >= 15? 15 : dados_tam-i);
+					parte = dados.substr(i, parte_tam);
+					msg = monta_mensagem("conteudo", (char *) parte.c_str(),  0b10, 0b01, seq);
+
+					do{
+						envia_mensagem(soquete, msg);
+						res = espera_mensagem(soquete, 0b01);
+					} while(res->tipo == 0b1001);
+				
+					seq = (seq + 1) % 16;			
+				}
+			}
+
+			do{
+				msg = monta_mensagem("fim", "",  0b10, 0b01, seq);
+				envia_mensagem(soquete, msg);
+				res = espera_mensagem(soquete, 0b01);
+			} while(res->tipo == 0b1001);
+
+			seq = (seq + 1) % 16;
+
+			if(pclose(fp))  {
+				printf("Command not found or exited with error status\n");
+				return -1;
+    		}
+
+
+			cout << compilar_res << endl;
 		}
 		
 	}
