@@ -156,36 +156,38 @@ string linhas_cliente(int soquete, int *seq, string arquivo, string linha_inicia
     do{
         envia_mensagem(soquete, msg);
         res = espera_mensagem(soquete, 0b10, *seq);
-    } while(res->tipo != 0b1000);
+    } while(res->tipo == 0b1001 || *seq != res->seq);
 
     *seq = (*seq+1)%16;
+
     string linhas = linha_inicial + '-' + linha_final;
     msg = monta_mensagem("linha_dados", (char *)linhas.c_str(), 0b01, 0b10, *seq);
     do{
         envia_mensagem(soquete, msg);
         res = espera_mensagem(soquete, 0b10, *seq);
-    } while(res->tipo != 0b1100);
+    } while(res->tipo != 0b1100 || *seq != res->seq);
 
-    *seq = (*seq+1)%16;
+    msg = monta_mensagem("ack", "", 0b01, 0b10, *seq);
+    envia_mensagem(soquete, msg);
+    *seq = (*seq + 1) % 16;
 
     for(int i = 0; i < res->tam ; i++)
         linhas_res.push_back(res->dados[i]);
 
     do{
-        struct mensagem *ack;
-        ack = monta_mensagem("ack", "", 0b01, 0b10, *seq);
-        envia_mensagem(soquete, msg);
-
         res = espera_mensagem(soquete, 0b10, *seq);
-        if(*seq == res->seq){
-            *seq = (*seq+1)%16;
+        if(res->tipo == 0b1100 && *seq == res->seq){
+            msg = monta_mensagem("ack", "", 0b01, 0b10, *seq);
+            envia_mensagem(soquete, msg);
+            *seq = (*seq + 1) % 16;
             for(int i = 0; i < res->tam ; i++)
                 linhas_res.push_back(res->dados[i]);
         }
-    } while(res->tipo != 0b1101);
+    } while(res->tipo != 0b1101 || *seq != res->seq);
         
     msg = monta_mensagem("ack", "", 0b01, 0b10, *seq);
     envia_mensagem(soquete, msg);
+    *seq = (*seq + 1) % 16;
 
     return linhas;
 }
