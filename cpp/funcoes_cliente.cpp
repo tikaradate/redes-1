@@ -168,8 +168,13 @@ string linhas_cliente(int soquete, int *seq, string arquivo, string linha_inicia
     do{
         envia_mensagem(soquete, msg);
         res = espera_mensagem(soquete, 0b10, *seq);
-    } while(res->tipo == 0b1001 || *seq != res->seq);
+    } while((res->tipo != 0b1100 && res->tipo != 0b1111) || *seq != res->seq);
 
+    if(res->tipo == 0b1111){
+        imprime_erro(res);
+        *seq = (*seq+1)%16;
+        return "";
+    }
     *seq = (*seq+1)%16;
 
     string linhas = linha_inicial + '-' + linha_final;
