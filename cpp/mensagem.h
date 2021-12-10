@@ -20,7 +20,7 @@ struct mensagem* desmonta_pacote(uint8_t *pacote);
 
 void imprime_mensagem(struct mensagem *msg);
 
-int calcula_paridade(struct mensagem msg);
+bool checa_paridade(struct mensagem *msg);
 
 int tipo_mensagem(string tipo);
 
@@ -30,4 +30,6 @@ struct mensagem *monta_mensagem(string tipo, string dados, int src, int dst, int
 
 void envia_mensagem(int soquete, struct mensagem *msg);
 
-struct mensagem *espera_mensagem(int soquete, int src);
+struct mensagem *espera_mensagem(int soquete, int src, int seq);
+
+void imprime_erro(struct mensagem *msg);

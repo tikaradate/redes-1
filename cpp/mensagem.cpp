@@ -5,14 +5,14 @@
 #include <inttypes.h> 
 #include <string>
 #include <cstring>
+#include <iostream>
 
 #include "mensagem.h"
 
 using std::string;
-
-int calcula_paridade(struct mensagem msg){
-	
-}
+using std::cout;
+using std::cerr;
+using std::endl;
 
 uint8_t* monta_pacote(struct mensagem *msg){
 	uint8_t *pacote = (uint8_t *) calloc(4+msg->tam, sizeof(uint8_t));
@@ -149,13 +149,43 @@ void envia_mensagem(int soquete, struct mensagem *msg){
 	send(soquete, pacote, (4+msg->tam)*4, 0);
 }
 
-struct mensagem *espera_mensagem(int soquete, int src){
+struct mensagem *espera_mensagem(int soquete, int src, int seq){
 	struct mensagem *res;
 	uint8_t res_pacote[19];
 	do{
 		int bytes = recv(soquete, res_pacote, 19, 0);
 		res = desmonta_pacote(res_pacote);
-
-	}while((int)res->src != src);
+		// cout << "\nres->seq: " << (int) res->seq << " seq: " << seq << endl; 
+		// cout << "res->src: " << (int) res->src << " src: " << src << endl;
+	}while(((int)res->src != src));
 	return res;
+}
+
+bool checa_paridade(struct mensagem *msg){
+	int paridade;
+	paridade = msg->tam ^ msg->seq ^ msg->tipo;
+	for(int i = 0; i < msg->tam; i++){
+		paridade ^= msg->dados[i]; 
+	}
+	return paridade = msg->paridade;
+}
+
+void imprime_erro(struct mensagem *msg){
+	switch (atoi((const char*) msg->dados))
+	{
+	case 1:
+		cerr << "Acesso negado" << endl;
+		break;
+	case 2:
+		cerr << "Diretorio inexistente" << endl;
+		break;
+	case 3:
+		cerr << "Arquivo inexistente" << endl;
+		break;
+	case 4:
+		cerr << "Linha inexistente" << endl;
+		break;
+	default:
+		break;
+	}
 }

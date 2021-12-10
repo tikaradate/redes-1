@@ -51,10 +51,12 @@ int raw_socket(char *dev){
 
 	// struct timeval tv;
 	// tv.tv_sec = 0;
-	// tv.tv_usec = 100000;
-	// if (setsockopt(soquete, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
+	// tv.tv_usec = 1000;
+	// if (setsockopt(soquete, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) 
 	// 	perror("Error");
-	// }
+	
+    // if (setsockopt(soquete, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) < 0)
+    //     perror("setsockopt failed\n");
 
     return soquete;
 }

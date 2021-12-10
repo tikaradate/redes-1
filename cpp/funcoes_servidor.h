@@ -2,16 +2,16 @@
 
 using std::string;
 
-void cd_servidor (int soquete, int *seq, string diretorio);
+void cd_servidor (int soquete, int *seq, struct mensagem *msg);
 
-void ls_servidor(int soquete, int *seq);
+void ls_servidor(int soquete, int *seq, struct mensagem *msg);
 
-void ver_servidor(int soquete, int *seq, string arquivo);
+void ver_servidor(int soquete, int *seq, struct mensagem *msg);
 
-void linha_servidor(int soquete, int *seq, string arquivo, string linha);
+void linha_servidor(int soquete, int *seq, struct mensagem *msg);
 
-void linhas_servidor(int soquete, int *seq, string arquivo, string linha_inicial, string linha_final);
+void linhas_servidor(int soquete, int *seq, struct mensagem *msg);
 
-void edit_servidor(int soquete, int *seq, string arquivo, string linha, string texto);
+void edit_servidor(int soquete, int *seq, struct mensagem *msg);
 
-void compilar_servidor(int soquete, int *seq, string arquivo, string opcoes);
+void compilar_servidor(int soquete, int *seq, struct mensagem *msg);

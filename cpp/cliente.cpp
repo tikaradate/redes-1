@@ -22,6 +22,7 @@
 #include "funcoes_cliente.h"
 
 using std::cout;
+using std::cerr;
 using std::endl;
 using std::string;
 using std::vector;
@@ -42,7 +43,12 @@ int main(){
 		char *comando = strtok(str, " \n");
 		struct mensagem *msg;
 		if(strcmp(comando, "cd") == 0){
-			string diretorio = strtok(NULL, "\n");
+			char *dir = strtok(NULL, "\n"); 
+			if(!dir){
+				cerr << "Precisa de um diretório\nUsagem: cd DIRNAME" << endl;
+				continue;
+			} 
+			string diretorio(dir);
 			cd_cliente(soquete, &seq, diretorio);
 		} else if(strcmp(comando, "ls") == 0){
 			string ls;
@@ -90,7 +96,7 @@ int main(){
 
 			// pega o ultimo argumento, que é o arquivo
 			arquivo = compilar_args.back();
-			arquivo.pop_back();
+			arquivo.pop_back(); // tira o \n
 			compilar_args.pop_back();
 			// vai pegando as opcoes até acabar
 			while(!compilar_args.empty()){
