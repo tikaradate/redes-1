@@ -158,7 +158,6 @@ void linha_servidor(int soquete, int *seq, struct mensagem *res){
     for(int i: res->dados)
         n_linha.push_back(i);
 
-    cout << n_linha << endl;
     int j = 0;
     while(getline(myfile, linha) && j < stoi(n_linha)){
         j++;
@@ -192,7 +191,7 @@ void linha_servidor(int soquete, int *seq, struct mensagem *res){
     
         *seq = (*seq + 1) % 16;			
     }
-    
+
     do{
         msg = monta_mensagem("fim", "",  0b10, 0b01, *seq);
         envia_mensagem(soquete, msg);
@@ -216,7 +215,7 @@ void linhas_servidor(int soquete, int *seq, struct mensagem *res){
     // precisa aguardar o numero de sequencia aumentar no lado do cliente
     do{
         res = espera_mensagem(soquete, 0b01, *seq);
-    } while(res->seq != *seq);
+    } while(string_mensagem(res->tipo) != "linha_dados" || res->seq != *seq);
 
     std::ifstream myfile(arquivo);
     string linha, linhas;
@@ -228,6 +227,7 @@ void linhas_servidor(int soquete, int *seq, struct mensagem *res){
     string linha_final = strtok(NULL, "\n");
 
     int j = 1;
+    // avança até a linha necessária
     while(getline(myfile, linha) && j < stoi(linha_inicial)){
         j++;
     }
@@ -245,7 +245,7 @@ void linhas_servidor(int soquete, int *seq, struct mensagem *res){
         do{
             envia_mensagem(soquete, msg);
             res = espera_mensagem(soquete, 0b01, *seq);
-        } while(res->tipo == 0b1001);
+        } while(res->tipo == 0b1001 || *seq != res->seq);
 
         *seq = (*seq + 1) % 16;
 
@@ -257,7 +257,7 @@ void linhas_servidor(int soquete, int *seq, struct mensagem *res){
             do{
                 envia_mensagem(soquete, msg);
                 res = espera_mensagem(soquete, 0b01, *seq);
-            } while(res->tipo == 0b1001);
+            } while(res->tipo == 0b1001 || *seq != res->seq);
         
             *seq = (*seq + 1) % 16;			
         }
@@ -268,7 +268,7 @@ void linhas_servidor(int soquete, int *seq, struct mensagem *res){
         msg = monta_mensagem("fim", "",  0b10, 0b01, *seq);
         envia_mensagem(soquete, msg);
         res = espera_mensagem(soquete, 0b01, *seq);
-    } while(res->tipo == 0b1001);
+    } while(res->tipo == 0b1001 || *seq != res->seq);
 
     *seq = (*seq + 1) % 16;
 }

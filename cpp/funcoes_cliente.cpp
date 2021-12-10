@@ -180,6 +180,7 @@ string linhas_cliente(int soquete, int *seq, string arquivo, string linha_inicia
             msg = monta_mensagem("ack", "", 0b01, 0b10, *seq);
             envia_mensagem(soquete, msg);
             *seq = (*seq + 1) % 16;
+
             for(int i = 0; i < res->tam ; i++)
                 linhas_res.push_back(res->dados[i]);
         }
@@ -189,7 +190,7 @@ string linhas_cliente(int soquete, int *seq, string arquivo, string linha_inicia
     envia_mensagem(soquete, msg);
     *seq = (*seq + 1) % 16;
 
-    return linhas;
+    return linhas_res;
 }
 
 void edit_cliente(int soquete, int *seq, string arquivo, string linha, string texto){
