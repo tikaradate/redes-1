@@ -7,9 +7,14 @@
 #include <linux/if.h>
 #include <errno.h>
 #include <stdlib.h>
-#include <string.h>
+#include <cstring>
 #include <stdio.h>
+#include <unistd.h>
+#include <string>
+
 #include "comms.h"
+
+using std::string;
 
 int raw_socket(char *dev){
     int soquete;
@@ -59,4 +64,15 @@ int raw_socket(char *dev){
     //     perror("setsockopt failed\n");
 
     return soquete;
+}
+
+string checa_arquivo(string arquivo){
+	// arquivo não existe
+    if(access(arquivo.c_str(), F_OK ) != 0 ) {
+        return "3";
+    // não ter permissão de leitura   
+    }else if (access(arquivo.c_str(), R_OK) != 0) {
+        return "1";
+    }
+	return "";
 }

@@ -10,6 +10,7 @@
 #include "funcoes_servidor.h"
 #include "mensagem.h"
 #include "list.h"
+#include "comms.h"
 
 using std::cout;
 using std::cerr;
@@ -24,7 +25,6 @@ void cd_servidor (int soquete, int *seq, struct mensagem *res){
 
     int ret = chdir(diretorio.c_str());
     if(ret == 0){
-        errno = 0;
         struct mensagem *ack;
         ack = monta_mensagem("ack", "", 0b10, 0b01, *seq);
         envia_mensagem(soquete, ack);
@@ -87,15 +87,25 @@ void ls_servidor(int soquete, int *seq, struct mensagem *res){
 
 void ver_servidor(int soquete, int *seq, struct mensagem *res){
     struct mensagem *msg;
-    string linha, arquivo;
+    string linha, arquivo, num_erro;
 
 	for(int i: res->dados)
 		arquivo.push_back(i);
-			
-    std::ifstream myfile(arquivo);
     
+    num_erro = checa_arquivo(arquivo);
+
+    if(!num_erro.empty()){
+        struct mensagem *erro;
+        erro = monta_mensagem("erro", num_erro, 0b10, 0b01, *seq);
+        envia_mensagem(soquete, erro);
+        *seq = (*seq+1)%16;
+        return;
+    }
+    
+    std::ifstream arquivo_stream(arquivo);
+
     int j = 1;
-    while(getline(myfile, linha)){
+    while(getline(arquivo_stream, linha)){
         string dados =  std::to_string(j) + '\t' + linha + '\n';
         int parte_tam, dados_tam;
         string parte;
@@ -138,10 +148,20 @@ void ver_servidor(int soquete, int *seq, struct mensagem *res){
 
 void linha_servidor(int soquete, int *seq, struct mensagem *res){
     struct mensagem *msg;
-    string arquivo;
+    string arquivo, num_erro;
 
     for(int i: res->dados)
         arquivo.push_back(i);
+
+    num_erro = checa_arquivo(arquivo);
+
+    if(!num_erro.empty()){
+        struct mensagem *erro;
+        erro = monta_mensagem("erro", num_erro, 0b10, 0b01, *seq);
+        envia_mensagem(soquete, erro);
+        *seq = (*seq+1)%16;
+        return;
+    }
 
     struct mensagem *ack = monta_mensagem("ack", "", 0b10, 0b01, *seq);
     envia_mensagem(soquete, ack);
@@ -203,10 +223,21 @@ void linha_servidor(int soquete, int *seq, struct mensagem *res){
 
 void linhas_servidor(int soquete, int *seq, struct mensagem *res){
     struct mensagem *msg;
-    string arquivo;
+    string arquivo, num_erro;
 
     for(int i: res->dados)
         arquivo.push_back(i);
+
+    num_erro = checa_arquivo(arquivo);
+
+    if(!num_erro.empty()){
+        struct mensagem *erro;
+        erro = monta_mensagem("erro", num_erro, 0b10, 0b01, *seq);
+        envia_mensagem(soquete, erro);
+        *seq = (*seq+1)%16;
+        cout << "erro no linhas" << endl;
+        return;
+    }
 
     struct mensagem *ack = monta_mensagem("ack", "", 0b10, 0b01, *seq);
     envia_mensagem(soquete, ack);

@@ -74,8 +74,14 @@ string ver_cliente(int soquete, int *seq, string arquivo){
     do{
         envia_mensagem(soquete, msg);
         res = espera_mensagem(soquete, 0b10, *seq);
-    } while(res->tipo != 0b1100 || *seq != res->seq);
+    } while((res->tipo != 0b1100 && res->tipo != 0b1111) || *seq != res->seq);
     
+    if(res->tipo == 0b1111){
+        imprime_erro(res);
+        *seq = (*seq+1)%16;
+        return "";
+    }
+
     msg = monta_mensagem("ack", "", 0b01, 0b10, *seq);
     envia_mensagem(soquete, msg);
     *seq = (*seq + 1) % 16;
@@ -111,7 +117,13 @@ string linha_cliente(int soquete, int *seq, string arquivo, string linha){
     do{
         envia_mensagem(soquete, msg);
         res = espera_mensagem(soquete, 0b10, *seq);
-    } while(res->tipo == 0b1001 || *seq != res->seq);
+    } while((res->tipo != 0b1100 && res->tipo != 0b1111) || *seq != res->seq);
+
+    if(res->tipo == 0b1111){
+        imprime_erro(res);
+        *seq = (*seq+1)%16;
+        return "";
+    }
 
     *seq = (*seq+1)%16;
 

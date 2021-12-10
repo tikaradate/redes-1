@@ -41,6 +41,9 @@ int main(){
 			exit(1);
 		}
 		char *comando = strtok(str, " \n");
+		if(!comando){
+			continue;
+		}
 		struct mensagem *msg;
 		if(strcmp(comando, "cd") == 0){
 			char *dir = strtok(NULL, "\n"); 
@@ -58,7 +61,6 @@ int main(){
 			string ver_res;
 			string arquivo = strtok(NULL, "\n");
 			ver_res = ver_cliente(soquete, &seq, arquivo);
-
 			cout << ver_res << endl;
 		} else if(strcmp(comando, "linha") == 0){
 			string linha_res;

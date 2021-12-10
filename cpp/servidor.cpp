@@ -64,6 +64,5 @@ int main(){
 		} else if(comando == "compilar"){
 			compilar_servidor(soquete, &seq, res);
 		}
-		
 	}
 }
