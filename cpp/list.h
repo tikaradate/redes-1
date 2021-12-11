@@ -1,1 +1,0 @@
-std::string ls(const char *dir);

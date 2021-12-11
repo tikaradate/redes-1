@@ -9,14 +9,17 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
+#define CLIENTE 0b01
+#define SERVIDOR 0b10
+
 void cd_cliente(int soquete, int *seq, string diretorio){
     struct mensagem *msg;
     struct mensagem *res;
     
-    msg = monta_mensagem("cd", diretorio, 0b01, 0b10, *seq);
+    msg = monta_mensagem("cd", diretorio, CLIENTE, SERVIDOR, *seq);
     do{
         envia_mensagem(soquete, msg);
-        res = espera_mensagem(soquete, 0b10, *seq);
+        res = espera_mensagem(soquete, SERVIDOR, *seq);
     } while(string_mensagem(res->tipo) == "nack" || *seq != res->seq);
     
     if(string_mensagem(res->tipo) == "erro"){
@@ -29,16 +32,17 @@ void cd_cliente(int soquete, int *seq, string diretorio){
 string ls_cliente(int soquete, int *seq){
     struct mensagem *msg;
     struct mensagem *res;
-    struct mensagem *ack;
     string ls_res;
 			
-    msg = monta_mensagem("ls", "", 0b01, 0b10, *seq);
+    msg = monta_mensagem("ls", "", CLIENTE, SERVIDOR, *seq);
     do{
         envia_mensagem(soquete, msg);
-        res = espera_mensagem(soquete, 0b10, *seq);
-    } while(res->tipo != 0b1011 || *seq != res->seq);
+        res = espera_mensagem(soquete, SERVIDOR, *seq);
+    } while(string_mensagem(res->tipo) == "nack" || 
+            string_mensagem(res->tipo) != "ls_dados" || 
+            *seq != res->seq);
     
-    msg = monta_mensagem("ack", "", 0b01, 0b10, *seq);
+    msg = monta_mensagem("ack", "", CLIENTE, SERVIDOR, *seq);
     envia_mensagem(soquete, msg);
     *seq = (*seq + 1) % 16;
 
@@ -46,9 +50,9 @@ string ls_cliente(int soquete, int *seq){
         ls_res.push_back(res->dados[i]);
 
     do{
-        res = espera_mensagem(soquete, 0b10, *seq);
+        res = espera_mensagem(soquete, SERVIDOR, *seq);
         if(res->tipo == 0b1011 && res->seq == *seq){
-            msg = monta_mensagem("ack", "", 0b01, 0b10, *seq);
+            msg = monta_mensagem("ack", "", CLIENTE, SERVIDOR, *seq);
             envia_mensagem(soquete, msg);
             *seq = (*seq + 1) % 16;
 
@@ -58,7 +62,7 @@ string ls_cliente(int soquete, int *seq){
         }
     } while(res->tipo != 0b1101 || *seq != res->seq);
     
-    msg = monta_mensagem("ack", "", 0b01, 0b10, *seq);
+    msg = monta_mensagem("ack", "", CLIENTE, SERVIDOR, *seq);
     envia_mensagem(soquete, msg);
     *seq = (*seq + 1) % 16;    
 
@@ -70,10 +74,10 @@ string ver_cliente(int soquete, int *seq, string arquivo){
     struct mensagem *res;
     string ver_res;
 
-    msg = monta_mensagem("ver", arquivo, 0b01, 0b10, *seq);
+    msg = monta_mensagem("ver", arquivo, CLIENTE, SERVIDOR, *seq);
     do{
         envia_mensagem(soquete, msg);
-        res = espera_mensagem(soquete, 0b10, *seq);
+        res = espera_mensagem(soquete, SERVIDOR, *seq);
     } while((res->tipo != 0b1100 && res->tipo != 0b1111) || *seq != res->seq);
     
     if(res->tipo == 0b1111){
@@ -82,7 +86,7 @@ string ver_cliente(int soquete, int *seq, string arquivo){
         return "";
     }
 
-    msg = monta_mensagem("ack", "", 0b01, 0b10, *seq);
+    msg = monta_mensagem("ack", "", CLIENTE, SERVIDOR, *seq);
     envia_mensagem(soquete, msg);
     *seq = (*seq + 1) % 16;
     
@@ -90,9 +94,9 @@ string ver_cliente(int soquete, int *seq, string arquivo){
         ver_res.push_back(res->dados[i]);
 
     do{
-        res = espera_mensagem(soquete, 0b10, *seq);
+        res = espera_mensagem(soquete, SERVIDOR, *seq);
         if(res->tipo == 0b1100 && res->seq == *seq){
-            msg = monta_mensagem("ack", "", 0b01, 0b10, *seq);
+            msg = monta_mensagem("ack", "", CLIENTE, SERVIDOR, *seq);
             envia_mensagem(soquete, msg);
             *seq = (*seq + 1) % 16;
             
@@ -101,7 +105,7 @@ string ver_cliente(int soquete, int *seq, string arquivo){
         }
     } while(res->tipo != 0b1101 || *seq != res->seq);
         
-    msg = monta_mensagem("ack", "", 0b01, 0b10, *seq);
+    msg = monta_mensagem("ack", "", CLIENTE, SERVIDOR, *seq);
     envia_mensagem(soquete, msg);
     *seq = (*seq + 1) % 16;
 
@@ -113,11 +117,11 @@ string linha_cliente(int soquete, int *seq, string arquivo, string linha){
     struct mensagem *res;
     string linha_res;
 
-    msg = monta_mensagem("linha", arquivo, 0b01, 0b10, *seq);
+    msg = monta_mensagem("linha", arquivo, CLIENTE, SERVIDOR, *seq);
     do{
         envia_mensagem(soquete, msg);
-        res = espera_mensagem(soquete, 0b10, *seq);
-    } while((res->tipo != 0b1100 && res->tipo != 0b1111) || *seq != res->seq);
+        res = espera_mensagem(soquete, SERVIDOR, *seq);
+    } while((res->tipo != 0b1000 && res->tipo != 0b1111) || *seq != res->seq);
 
     if(res->tipo == 0b1111){
         imprime_erro(res);
@@ -127,13 +131,14 @@ string linha_cliente(int soquete, int *seq, string arquivo, string linha){
 
     *seq = (*seq+1)%16;
 
-    msg = monta_mensagem("linha_dados", linha, 0b01, 0b10, *seq);
+    msg = monta_mensagem("linha_dados", linha, CLIENTE, SERVIDOR, *seq);
+    cout << *seq << endl;
     do{
         envia_mensagem(soquete, msg);
-        res = espera_mensagem(soquete, 0b10, *seq);
+        res = espera_mensagem(soquete, SERVIDOR, *seq);
     } while(res->tipo != 0b1100 || *seq != res->seq);
 
-    msg = monta_mensagem("ack", "", 0b01, 0b10, *seq);
+    msg = monta_mensagem("ack", "", CLIENTE, SERVIDOR, *seq);
     envia_mensagem(soquete, msg);
     *seq = (*seq + 1) % 16;
 
@@ -141,9 +146,9 @@ string linha_cliente(int soquete, int *seq, string arquivo, string linha){
         linha_res.push_back(res->dados[i]);
 
     do{
-        res = espera_mensagem(soquete, 0b10, *seq);
+        res = espera_mensagem(soquete, SERVIDOR, *seq);
         if(res->tipo == 0b1100 && *seq == res->seq){
-            msg = monta_mensagem("ack", "", 0b01, 0b10, *seq);
+            msg = monta_mensagem("ack", "", CLIENTE, SERVIDOR, *seq);
             envia_mensagem(soquete, msg);
             *seq = (*seq + 1) % 16;
 
@@ -152,7 +157,7 @@ string linha_cliente(int soquete, int *seq, string arquivo, string linha){
         }
     } while(res->tipo != 0b1101 || *seq != res->seq);
         
-    msg = monta_mensagem("ack", "", 0b01, 0b10, *seq);
+    msg = monta_mensagem("ack", "", CLIENTE, SERVIDOR, *seq);
     envia_mensagem(soquete, msg);
     *seq = (*seq + 1) % 16;
 
@@ -164,11 +169,11 @@ string linhas_cliente(int soquete, int *seq, string arquivo, string linha_inicia
     struct mensagem *res;
     string linhas_res;
     
-    msg = monta_mensagem("linhas", (char *)arquivo.c_str(), 0b01, 0b10, *seq);
+    msg = monta_mensagem("linhas", (char *)arquivo.c_str(), CLIENTE, SERVIDOR, *seq);
     do{
         envia_mensagem(soquete, msg);
-        res = espera_mensagem(soquete, 0b10, *seq);
-    } while((res->tipo != 0b1100 && res->tipo != 0b1111) || *seq != res->seq);
+        res = espera_mensagem(soquete, SERVIDOR, *seq);
+    } while((res->tipo != 0b1000 && res->tipo != 0b1111) || *seq != res->seq);
 
     if(res->tipo == 0b1111){
         imprime_erro(res);
@@ -178,13 +183,13 @@ string linhas_cliente(int soquete, int *seq, string arquivo, string linha_inicia
     *seq = (*seq+1)%16;
 
     string linhas = linha_inicial + '-' + linha_final;
-    msg = monta_mensagem("linha_dados", (char *)linhas.c_str(), 0b01, 0b10, *seq);
+    msg = monta_mensagem("linha_dados", (char *)linhas.c_str(), CLIENTE, SERVIDOR, *seq);
     do{
         envia_mensagem(soquete, msg);
-        res = espera_mensagem(soquete, 0b10, *seq);
+        res = espera_mensagem(soquete, SERVIDOR, *seq);
     } while(res->tipo != 0b1100 || *seq != res->seq);
 
-    msg = monta_mensagem("ack", "", 0b01, 0b10, *seq);
+    msg = monta_mensagem("ack", "", CLIENTE, SERVIDOR, *seq);
     envia_mensagem(soquete, msg);
     *seq = (*seq + 1) % 16;
 
@@ -192,9 +197,9 @@ string linhas_cliente(int soquete, int *seq, string arquivo, string linha_inicia
         linhas_res.push_back(res->dados[i]);
 
     do{
-        res = espera_mensagem(soquete, 0b10, *seq);
+        res = espera_mensagem(soquete, SERVIDOR, *seq);
         if(res->tipo == 0b1100 && *seq == res->seq){
-            msg = monta_mensagem("ack", "", 0b01, 0b10, *seq);
+            msg = monta_mensagem("ack", "", CLIENTE, SERVIDOR, *seq);
             envia_mensagem(soquete, msg);
             *seq = (*seq + 1) % 16;
 
@@ -203,7 +208,7 @@ string linhas_cliente(int soquete, int *seq, string arquivo, string linha_inicia
         }
     } while(res->tipo != 0b1101 || *seq != res->seq);
         
-    msg = monta_mensagem("ack", "", 0b01, 0b10, *seq);
+    msg = monta_mensagem("ack", "", CLIENTE, SERVIDOR, *seq);
     envia_mensagem(soquete, msg);
     *seq = (*seq + 1) % 16;
 
@@ -216,10 +221,10 @@ void edit_cliente(int soquete, int *seq, string arquivo, string linha, string te
     string edit_res, parte;
     int parte_tam, texto_tam;
 
-    msg = monta_mensagem("edit", arquivo, 0b01, 0b10, *seq);
+    msg = monta_mensagem("edit", arquivo, CLIENTE, SERVIDOR, *seq);
     do{
         envia_mensagem(soquete, msg);
-        res = espera_mensagem(soquete, 0b10, *seq);
+        res = espera_mensagem(soquete, SERVIDOR, *seq);
     } while((res->tipo != 0b1000 && res->tipo != 0b1111) || *seq != res->seq);
 
     if(res->tipo == 0b1111){
@@ -230,10 +235,10 @@ void edit_cliente(int soquete, int *seq, string arquivo, string linha, string te
 
     *seq = (*seq + 1) % 16;
 
-    msg = monta_mensagem("linha_dados", linha, 0b01, 0b10, *seq);
+    msg = monta_mensagem("linha_dados", linha, CLIENTE, SERVIDOR, *seq);
     do{
         envia_mensagem(soquete, msg);
-        res = espera_mensagem(soquete, 0b10, *seq);
+        res = espera_mensagem(soquete, SERVIDOR, *seq);
     } while(res->tipo == 0b1001 || *seq != res->seq);
 
     *seq = (*seq + 1) % 16;
@@ -243,20 +248,20 @@ void edit_cliente(int soquete, int *seq, string arquivo, string linha, string te
     for(int i = 1; i < texto_tam; i+=15){
         parte_tam = (texto_tam-i >= 15? 15 : texto_tam-i);
         parte = texto.substr(i, parte_tam);
-        msg = monta_mensagem("conteudo", parte,   0b01, 0b10, *seq);
+        msg = monta_mensagem("conteudo", parte,   0b01, SERVIDOR, *seq);
 
         do{
             envia_mensagem(soquete, msg);
-            res = espera_mensagem(soquete, 0b10, *seq);
+            res = espera_mensagem(soquete, SERVIDOR, *seq);
         } while(res->tipo == 0b1001 || *seq != res->seq);
 
         *seq = (*seq + 1) % 16;			
     }
     
     do{
-        msg = monta_mensagem("fim", "",   0b01, 0b10, *seq);
+        msg = monta_mensagem("fim", "",   0b01, SERVIDOR, *seq);
         envia_mensagem(soquete, msg);
-        res = espera_mensagem(soquete, 0b10, *seq);
+        res = espera_mensagem(soquete, SERVIDOR, *seq);
     } while(res->tipo == 0b1001 || *seq != res->seq);
 
     *seq = (*seq + 1) % 16;
@@ -267,10 +272,10 @@ string compilar_cliente(int soquete, int *seq, string arquivo, string opcoes){
     string edit_res, parte, compilar_res;
     int parte_tam, opcoes_tam;
 
-    msg = monta_mensagem("compilar", arquivo, 0b01, 0b10, *seq);
+    msg = monta_mensagem("compilar", arquivo, CLIENTE, SERVIDOR, *seq);
     do{
         envia_mensagem(soquete, msg);
-        res = espera_mensagem(soquete, 0b10, *seq);
+        res = espera_mensagem(soquete, SERVIDOR, *seq);
     } while((res->tipo != 0b1000 && res->tipo != 0b1111) || *seq != res->seq);
 
     if(res->tipo == 0b1111){
@@ -285,40 +290,28 @@ string compilar_cliente(int soquete, int *seq, string arquivo, string opcoes){
     for(int i = 0; i < opcoes_tam; i+=15){
         parte_tam = (opcoes_tam-i >= 15? 15 : opcoes_tam-i);
         parte = opcoes.substr(i, parte_tam);
-        msg = monta_mensagem("conteudo", parte,   0b01, 0b10, *seq);
+        msg = monta_mensagem("conteudo", parte,   0b01, SERVIDOR, *seq);
 
         do{
             envia_mensagem(soquete, msg);
-            res = espera_mensagem(soquete, 0b10, *seq);
+            res = espera_mensagem(soquete, SERVIDOR, *seq);
         } while(res->tipo == 0b1001 || *seq != res->seq);
 
         *seq = (*seq + 1) % 16;			
     }
     
-    msg = monta_mensagem("fim", "",   0b01, 0b10, *seq);
+    msg = monta_mensagem("fim", "",   0b01, SERVIDOR, *seq);
     do{
         envia_mensagem(soquete, msg);
-        res = espera_mensagem(soquete, 0b10, *seq);
+        res = espera_mensagem(soquete, SERVIDOR, *seq);
     } while(res->tipo != 0b1000 || *seq != res->seq);
     *seq = (*seq + 1) % 16;
 
-    //aguarda a resposta do compilar
-        // do{
-        //     res = espera_mensagem(soquete, 0b10, *seq);
-        // } while(res->tipo != 0b1100 || *seq != res->seq);
-
-        // ack = monta_mensagem("ack", "", 0b01, 0b10, *seq);
-        // envia_mensagem(soquete, ack);
-        // *seq = (*seq+1)%16;
-
-        // for(int i = 0; i < res->tam ; i++)
-        //     compilar_res.push_back(res->dados[i]);
-
+    // resposta do compilar aqui
     do{
-        res = espera_mensagem(soquete, 0b10, *seq);
+        res = espera_mensagem(soquete, SERVIDOR, *seq);
         if(res->tipo == 0b1100 && *seq == res->seq){
-            ack = monta_mensagem("ack", "", 0b01, 0b10, *seq);
-            imprime_mensagem(ack);
+            ack = monta_mensagem("ack", "", CLIENTE, SERVIDOR, *seq);
             envia_mensagem(soquete, ack);
             *seq = (*seq+1)%16;
         
@@ -327,10 +320,10 @@ string compilar_cliente(int soquete, int *seq, string arquivo, string opcoes){
         }
     } while(res->tipo != 0b1101 || *seq != res->seq);
         
-    msg = monta_mensagem("ack", "", 0b01, 0b10, *seq);
+    msg = monta_mensagem("ack", "", CLIENTE, SERVIDOR, *seq);
     envia_mensagem(soquete, msg);
     *seq = (*seq+1)%16;
-    
+
     return compilar_res;
 }
 

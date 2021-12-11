@@ -87,6 +87,8 @@ int tipo_mensagem(string tipo){
 	} else if (tipo == "erro"){
 		return 0b1111;
 	}
+
+	return -1;
 } 
 
 string string_mensagem(int tipo){
@@ -121,6 +123,7 @@ string string_mensagem(int tipo){
 	case 0b1111:
 		return "erro";
 	}
+	return "";
 }
 
 struct mensagem *monta_mensagem(string tipo, string dados, int src, int dst, int seq){
@@ -153,7 +156,7 @@ struct mensagem *espera_mensagem(int soquete, int src, int seq){
 	struct mensagem *res;
 	uint8_t res_pacote[19];
 	do{
-		int bytes = recv(soquete, res_pacote, 19, 0);
+		recv(soquete, res_pacote, 19, 0);
 		res = desmonta_pacote(res_pacote);
 	}while(((int)res->src != src));
 	return res;
@@ -165,7 +168,7 @@ bool checa_paridade(struct mensagem *msg){
 	for(int i = 0; i < msg->tam; i++){
 		paridade ^= msg->dados[i]; 
 	}
-	return paridade = msg->paridade;
+	return paridade == msg->paridade;
 }
 
 void imprime_erro(struct mensagem *msg){

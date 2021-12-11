@@ -16,7 +16,6 @@
 #include <vector>
 #include <iostream>
 
-#include "list.h"
 #include "mensagem.h"
 #include "comms.h"
 #include "funcoes_cliente.h"
@@ -32,7 +31,6 @@ int main(){
 	int soquete;
  	soquete = raw_socket("lo");
 	int seq = 0;
-	uint8_t *pacote;
 	while(2!=1){
 		char linha[1024];
 		char *str = fgets(linha, 1024, stdin);
@@ -44,7 +42,6 @@ int main(){
 		if(!comando){
 			continue;
 		}
-		struct mensagem *msg;
 		if(strcmp(comando, "cd") == 0){
 			char *dir = strtok(NULL, "\n"); 
 			if(!dir){
@@ -110,7 +107,12 @@ int main(){
 
 			cout << compilar_res << endl;
 		} else if(strcmp(comando, "lcd") == 0){
-			string diretorio = strtok(NULL, "\n");
+			char *dir = strtok(NULL, "\n"); 
+			if(!dir){
+				cerr << "Precisa de um diretório\nUsagem: lcd DIRNAME" << endl;
+				continue;
+			}
+			string diretorio(dir);
 			chdir(diretorio.c_str());
 		} else if(strcmp(comando, "lls") == 0){
 			cout << ls(".");

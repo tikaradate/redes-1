@@ -21,7 +21,6 @@
 #include "funcoes_servidor.h"
 #include "comms.h"
 #include "mensagem.h"
-#include "list.h"
 
 using std::cout;
 using std::endl;
@@ -33,11 +32,7 @@ int main(){
 
 	int seq = 0;
 	while(1){
-		uint8_t res_pacote[19];
-		uint8_t *pacote;
-		int bytes;
-		int paridade;
-		struct mensagem *msg, *res, *ack, *nack;
+		struct mensagem *res, *nack;
 
 		res = espera_mensagem(soquete, 0b01, seq);
 		if(!checa_paridade(res)){

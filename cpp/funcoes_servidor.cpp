@@ -9,12 +9,24 @@
 
 #include "funcoes_servidor.h"
 #include "mensagem.h"
-#include "list.h"
 #include "comms.h"
 
 using std::cout;
 using std::cerr;
 using std::endl;
+
+
+void teste_nack(int soquete, int seq){
+    for(int i = 0; i < 5; i++){
+        struct mensagem *nack;
+        struct mensagem *msg;
+        nack = monta_mensagem("nack", "", 0b10, 0b01, seq);
+        envia_mensagem(soquete, nack);
+        do{
+            msg = espera_mensagem(soquete, 0b01, seq);
+        }while(msg->tipo == 0b1001 || seq != msg->seq);
+    }
+}
 
 
 void cd_servidor (int soquete, int *seq, struct mensagem *res){
@@ -179,16 +191,17 @@ void linha_servidor(int soquete, int *seq, struct mensagem *res){
     for(int i: res->dados)
         n_linha.push_back(i);
 
-    int j = 0;
+    int j = 1;
     while(getline(myfile, linha) && j < stoi(n_linha)){
         j++;
     }
-    
+
     string dados = linha + '\n';
     int parte_tam, dados_tam;
     string parte;
 
     dados_tam = dados.length();
+    cout << dados;
     parte_tam = (dados_tam >= 15? 15 : dados_tam);
     parte = dados.substr(0, parte_tam);
 
@@ -260,8 +273,10 @@ void linhas_servidor(int soquete, int *seq, struct mensagem *res){
 
     int j = 1;
     // avança até a linha necessária
-    while(getline(myfile, linha) && j < stoi(linha_inicial)){
-        j++;
+    if(stoi(linha_inicial) > 1){
+        while(getline(myfile, linha) && j < stoi(linha_inicial)){
+            j++;
+        }
     }
 
     while(getline(myfile, linha) && j < stoi(linha_final)){
