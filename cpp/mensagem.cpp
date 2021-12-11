@@ -155,8 +155,6 @@ struct mensagem *espera_mensagem(int soquete, int src, int seq){
 	do{
 		int bytes = recv(soquete, res_pacote, 19, 0);
 		res = desmonta_pacote(res_pacote);
-		// cout << "\nres->seq: " << (int) res->seq << " seq: " << seq << endl; 
-		// cout << "res->src: " << (int) res->src << " src: " << src << endl;
 	}while(((int)res->src != src));
 	return res;
 }

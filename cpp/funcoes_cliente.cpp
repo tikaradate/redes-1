@@ -229,7 +229,7 @@ void edit_cliente(int soquete, int *seq, string arquivo, string linha, string te
     }
 
     *seq = (*seq + 1) % 16;
-    cout << *seq << endl;
+
     msg = monta_mensagem("linha_dados", linha, 0b01, 0b10, *seq);
     do{
         envia_mensagem(soquete, msg);
@@ -263,8 +263,7 @@ void edit_cliente(int soquete, int *seq, string arquivo, string linha, string te
 }
 
 string compilar_cliente(int soquete, int *seq, string arquivo, string opcoes){
-    struct mensagem *msg;
-    struct mensagem *res;
+    struct mensagem *msg, *res, *ack;
     string edit_res, parte, compilar_res;
     int parte_tam, opcoes_tam;
 
@@ -272,8 +271,14 @@ string compilar_cliente(int soquete, int *seq, string arquivo, string opcoes){
     do{
         envia_mensagem(soquete, msg);
         res = espera_mensagem(soquete, 0b10, *seq);
-    } while(res->tipo == 0b1001);
+    } while((res->tipo != 0b1000 && res->tipo != 0b1111) || *seq != res->seq);
 
+    if(res->tipo == 0b1111){
+        imprime_erro(res);
+        *seq = (*seq+1)%16;
+        return "";
+    }
+    
     *seq = (*seq + 1) % 16;
     
     opcoes_tam = opcoes.length();
@@ -285,43 +290,47 @@ string compilar_cliente(int soquete, int *seq, string arquivo, string opcoes){
         do{
             envia_mensagem(soquete, msg);
             res = espera_mensagem(soquete, 0b10, *seq);
-        } while(res->tipo == 0b1001);
+        } while(res->tipo == 0b1001 || *seq != res->seq);
 
         *seq = (*seq + 1) % 16;			
     }
     
+    msg = monta_mensagem("fim", "",   0b01, 0b10, *seq);
     do{
-        msg = monta_mensagem("fim", "",   0b01, 0b10, *seq);
         envia_mensagem(soquete, msg);
         res = espera_mensagem(soquete, 0b10, *seq);
-    } while(res->tipo == 0b1100);
-
+    } while(res->tipo != 0b1000 || *seq != res->seq);
     *seq = (*seq + 1) % 16;
 
-    // aguarda o conteúdo ou erro após enviar tudo do compilar
+    //aguarda a resposta do compilar
+        // do{
+        //     res = espera_mensagem(soquete, 0b10, *seq);
+        // } while(res->tipo != 0b1100 || *seq != res->seq);
+
+        // ack = monta_mensagem("ack", "", 0b01, 0b10, *seq);
+        // envia_mensagem(soquete, ack);
+        // *seq = (*seq+1)%16;
+
+        // for(int i = 0; i < res->tam ; i++)
+        //     compilar_res.push_back(res->dados[i]);
+
     do{
         res = espera_mensagem(soquete, 0b10, *seq);
-    } while(res->tipo != 0b1100);
-
-    for(int i = 0; i < res->tam ; i++)
-        compilar_res.push_back(res->dados[i]);
-
-    do{
-        struct mensagem *ack;
-        ack = monta_mensagem("ack", "", 0b01, 0b10, *seq);
-        envia_mensagem(soquete, msg);
-
-        res = espera_mensagem(soquete, 0b10, *seq);
-        if(*seq == res->seq){
+        if(res->tipo == 0b1100 && *seq == res->seq){
+            ack = monta_mensagem("ack", "", 0b01, 0b10, *seq);
+            imprime_mensagem(ack);
+            envia_mensagem(soquete, ack);
             *seq = (*seq+1)%16;
+        
             for(int i = 0; i < res->tam ; i++)
                 compilar_res.push_back(res->dados[i]);
         }
-    } while(res->tipo != 0b1101);
+    } while(res->tipo != 0b1101 || *seq != res->seq);
         
     msg = monta_mensagem("ack", "", 0b01, 0b10, *seq);
     envia_mensagem(soquete, msg);
-
+    *seq = (*seq+1)%16;
+    
     return compilar_res;
 }
 
