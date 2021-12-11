@@ -45,7 +45,7 @@ int main(){
 		if(strcmp(comando, "cd") == 0){
 			char *dir = strtok(NULL, "\n"); 
 			if(!dir){
-				cerr << "Precisa de um diretório\nUsagem: cd DIRNAME" << endl;
+				cerr << "Precisa de um diretório\nUsagem: cd $DIRETORIO" << endl;
 				continue;
 			} 
 			string diretorio(dir);
@@ -55,8 +55,13 @@ int main(){
 			ls = ls_cliente(soquete, &seq);
 			cout << ls << endl;
 		} else if(strcmp(comando, "ver") == 0){
+			char *arq = strtok(NULL, "\n");
+			if(!arq){
+				cerr << "Precisa de um arquivo\nUsagem: ver $ARQUIVO" << endl;
+				continue;
+			}
 			string ver_res;
-			string arquivo = strtok(NULL, "\n");
+			string arquivo(arq);
 			ver_res = ver_cliente(soquete, &seq, arquivo);
 			cout << ver_res << endl;
 		} else if(strcmp(comando, "linha") == 0){
@@ -115,7 +120,7 @@ int main(){
 			string diretorio(dir);
 			chdir(diretorio.c_str());
 		} else if(strcmp(comando, "lls") == 0){
-			cout << ls(".");
+			cout << ls(".") << endl;
 		}
 	}
 }

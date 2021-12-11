@@ -132,7 +132,7 @@ string linha_cliente(int soquete, int *seq, string arquivo, string linha){
     *seq = (*seq+1)%16;
 
     msg = monta_mensagem("linha_dados", linha, CLIENTE, SERVIDOR, *seq);
-    cout << *seq << endl;
+
     do{
         envia_mensagem(soquete, msg);
         res = espera_mensagem(soquete, SERVIDOR, *seq);

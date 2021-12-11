@@ -15,22 +15,35 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
+#define CLIENTE 0b01
+#define SERVIDOR 0b10
+
+int conta_linhas(string arquivo){
+    std::ifstream arq (arquivo);   
+    int linhas = 0;
+    string linha;
+    while (std::getline(arq, linha))
+        linhas++;
+
+    return linhas;
+}
+
 
 void teste_nack(int soquete, int seq){
     for(int i = 0; i < 5; i++){
         struct mensagem *nack;
         struct mensagem *msg;
-        nack = monta_mensagem("nack", "", 0b10, 0b01, seq);
+        nack = monta_mensagem("nack", "", SERVIDOR, CLIENTE, seq);
         envia_mensagem(soquete, nack);
         do{
-            msg = espera_mensagem(soquete, 0b01, seq);
+            msg = espera_mensagem(soquete, CLIENTE, seq);
         }while(msg->tipo == 0b1001 || seq != msg->seq);
     }
 }
 
 
 void cd_servidor (int soquete, int *seq, struct mensagem *res){
-	string diretorio;
+    string diretorio;
     
 	for(int i: res->dados)
 		diretorio.push_back(i);
@@ -38,7 +51,7 @@ void cd_servidor (int soquete, int *seq, struct mensagem *res){
     int ret = chdir(diretorio.c_str());
     if(ret == 0){
         struct mensagem *ack;
-        ack = monta_mensagem("ack", "", 0b10, 0b01, *seq);
+        ack = monta_mensagem("ack", "", SERVIDOR, CLIENTE, *seq);
         envia_mensagem(soquete, ack);
     } else {
         string num_erro = "0";
@@ -49,7 +62,7 @@ void cd_servidor (int soquete, int *seq, struct mensagem *res){
         }
 
         struct mensagem *erro;
-        erro = monta_mensagem("erro", num_erro, 0b10, 0b01, *seq);
+        erro = monta_mensagem("erro", num_erro, SERVIDOR, CLIENTE, *seq);
         envia_mensagem(soquete, erro);
     }
 
@@ -67,10 +80,10 @@ void ls_servidor(int soquete, int *seq, struct mensagem *res){
     parte_tam = (ls_tam >= 15? 15 : ls_tam);
     parte = dados.substr(0, parte_tam);
 
-    msg = monta_mensagem("ls_dados", parte,  0b10, 0b01, *seq);
+    msg = monta_mensagem("ls_dados", parte,  0b10, CLIENTE, *seq);
     do{
         envia_mensagem(soquete, msg);
-        res = espera_mensagem(soquete, 0b01, *seq);
+        res = espera_mensagem(soquete, CLIENTE, *seq);
     }while(res->tipo == 0b1001 || *seq != res->seq);
 
     *seq = (*seq + 1) % 16;
@@ -78,20 +91,20 @@ void ls_servidor(int soquete, int *seq, struct mensagem *res){
     for(int i = 15; i < ls_tam; i+=15){
         parte_tam = (ls_tam-i >= 15? 15 : ls_tam-i);
         parte = dados.substr(i, parte_tam);
-        msg = monta_mensagem("ls_dados", parte,  0b10, 0b01, *seq);
+        msg = monta_mensagem("ls_dados", parte,  0b10, CLIENTE, *seq);
 
         do{
             envia_mensagem(soquete, msg);
-            res = espera_mensagem(soquete, 0b01, *seq);
+            res = espera_mensagem(soquete, CLIENTE, *seq);
         } while(res->tipo == 0b1001 || *seq != res->seq);
 
         *seq = (*seq + 1) % 16;			
     }
     
     do{
-        msg = monta_mensagem("fim", "",  0b10, 0b01, *seq);
+        msg = monta_mensagem("fim", "",  0b10, CLIENTE, *seq);
         envia_mensagem(soquete, msg);
-        res = espera_mensagem(soquete, 0b01, *seq);
+        res = espera_mensagem(soquete, CLIENTE, *seq);
     } while(res->tipo == 0b1001 || *seq != res->seq);
 
     *seq = (*seq + 1) % 16;	
@@ -109,7 +122,7 @@ void ver_servidor(int soquete, int *seq, struct mensagem *res){
 
     if(!num_erro.empty()){
         struct mensagem *erro;
-        erro = monta_mensagem("erro", num_erro, 0b10, 0b01, *seq);
+        erro = monta_mensagem("erro", num_erro, SERVIDOR, CLIENTE, *seq);
         envia_mensagem(soquete, erro);
         *seq = (*seq+1)%16;
         return;
@@ -127,10 +140,10 @@ void ver_servidor(int soquete, int *seq, struct mensagem *res){
         parte_tam = (dados_tam >= 15? 15 : dados_tam);
         parte = dados.substr(0, parte_tam);
         
-        msg = monta_mensagem("conteudo", parte,  0b10, 0b01, *seq);
+        msg = monta_mensagem("conteudo", parte,  0b10, CLIENTE, *seq);
         do{
             envia_mensagem(soquete, msg);
-            res = espera_mensagem(soquete, 0b01, *seq);
+            res = espera_mensagem(soquete, CLIENTE, *seq);
         } while(res->tipo == 0b1001 || *seq != res->seq);
 
         *seq = (*seq + 1) % 16;
@@ -138,11 +151,11 @@ void ver_servidor(int soquete, int *seq, struct mensagem *res){
         for(int i = 15; i < dados_tam; i+=15){
             parte_tam = (dados_tam-i >= 15? 15 : dados_tam-i);
             parte = dados.substr(i, parte_tam);
-            msg = monta_mensagem("conteudo", parte,  0b10, 0b01, *seq);
+            msg = monta_mensagem("conteudo", parte,  0b10, CLIENTE, *seq);
 
             do{
                 envia_mensagem(soquete, msg);
-                res = espera_mensagem(soquete, 0b01, *seq);
+                res = espera_mensagem(soquete, CLIENTE, *seq);
             } while(res->tipo == 0b1001 || *seq != res->seq);
         
             *seq = (*seq + 1) % 16;			
@@ -151,9 +164,9 @@ void ver_servidor(int soquete, int *seq, struct mensagem *res){
         j++;
     }
     do{
-        msg = monta_mensagem("fim", "",  0b10, 0b01, *seq);
+        msg = monta_mensagem("fim", "",  0b10, CLIENTE, *seq);
         envia_mensagem(soquete, msg);
-        res = espera_mensagem(soquete, 0b01, *seq);
+        res = espera_mensagem(soquete, CLIENTE, *seq);
     } while(res->tipo == 0b1001 || *seq != res->seq);
 
     *seq = (*seq + 1) % 16;
@@ -170,66 +183,80 @@ void linha_servidor(int soquete, int *seq, struct mensagem *res){
 
     if(!num_erro.empty()){
         struct mensagem *erro;
-        erro = monta_mensagem("erro", num_erro, 0b10, 0b01, *seq);
+        erro = monta_mensagem("erro", num_erro, SERVIDOR, CLIENTE, *seq);
         envia_mensagem(soquete, erro);
         *seq = (*seq+1)%16;
         return;
     }
 
-    struct mensagem *ack = monta_mensagem("ack", "", 0b10, 0b01, *seq);
+    struct mensagem *ack = monta_mensagem("ack", "", SERVIDOR, CLIENTE, *seq);
     envia_mensagem(soquete, ack);
     *seq = (*seq + 1) % 16;
 
     // precisa aguardar o numero de sequencia aumentar no lado do cliente
     do{
-        res = espera_mensagem(soquete, 0b01, *seq);
+        res = espera_mensagem(soquete, CLIENTE, *seq);
     } while(string_mensagem(res->tipo) != "linha_dados" || res->seq != *seq);
 
-    std::ifstream myfile(arquivo);
+    std::ifstream arquivo_stream(arquivo);
     string linha, n_linha;
-
+    int linhas_arquivo = conta_linhas(arquivo);
+    
     for(int i: res->dados)
         n_linha.push_back(i);
 
-    int j = 1;
-    while(getline(myfile, linha) && j < stoi(n_linha)){
-        j++;
-    }
+    int qt_linha = stoi(n_linha);
 
-    string dados = linha + '\n';
-    int parte_tam, dados_tam;
-    string parte;
+    if(qt_linha > 0 && qt_linha <= linhas_arquivo){
+        int j = 1;
+        if(qt_linha > 1){
+            while(getline(arquivo_stream, linha) && j < qt_linha){
+                j++;
+            }
+        }
 
-    dados_tam = dados.length();
-    cout << dados;
-    parte_tam = (dados_tam >= 15? 15 : dados_tam);
-    parte = dados.substr(0, parte_tam);
+        string dados = linha + '\n';
+        int parte_tam, dados_tam;
+        string parte;
 
-    msg = monta_mensagem("conteudo", parte,  0b10, 0b01, *seq);
-    do{
-        envia_mensagem(soquete, msg);
-        res = espera_mensagem(soquete, 0b01, *seq);
-    } while(res->tipo == 0b1001 || *seq != res->seq);
+        dados_tam = dados.length();
+        cout << dados;
+        parte_tam = (dados_tam >= 15? 15 : dados_tam);
+        parte = dados.substr(0, parte_tam);
 
-    *seq = (*seq + 1) % 16;
-
-    for(int i = 15; i < dados_tam; i+=15){
-        parte_tam = (dados_tam-i >= 15? 15 : dados_tam-i);
-        parte = dados.substr(i, parte_tam);
-        msg = monta_mensagem("conteudo", parte,  0b10, 0b01, *seq);
-
+        msg = monta_mensagem("conteudo", parte,  0b10, CLIENTE, *seq);
         do{
             envia_mensagem(soquete, msg);
-            res = espera_mensagem(soquete, 0b01, *seq);
+            res = espera_mensagem(soquete, CLIENTE, *seq);
         } while(res->tipo == 0b1001 || *seq != res->seq);
-    
-        *seq = (*seq + 1) % 16;			
-    }
 
+        *seq = (*seq + 1) % 16;
+
+        for(int i = 15; i < dados_tam; i+=15){
+            parte_tam = (dados_tam-i >= 15? 15 : dados_tam-i);
+            parte = dados.substr(i, parte_tam);
+            msg = monta_mensagem("conteudo", parte,  0b10, CLIENTE, *seq);
+
+            do{
+                envia_mensagem(soquete, msg);
+                res = espera_mensagem(soquete, CLIENTE, *seq);
+            } while(res->tipo == 0b1001 || *seq != res->seq);
+        
+            *seq = (*seq + 1) % 16;			
+        }
+    } else {
+        msg = monta_mensagem("conteudo", "",  0b10, CLIENTE, *seq);
+        do{
+            envia_mensagem(soquete, msg);
+            res = espera_mensagem(soquete, CLIENTE, *seq);
+        } while(res->tipo == 0b1001 || *seq != res->seq);
+
+        *seq = (*seq + 1) % 16;
+    }
     do{
-        msg = monta_mensagem("fim", "",  0b10, 0b01, *seq);
+        msg = monta_mensagem("fim", "",  0b10, CLIENTE, *seq);
         envia_mensagem(soquete, msg);
-        res = espera_mensagem(soquete, 0b01, *seq);
+        res = espera_mensagem(soquete, CLIENTE, *seq);
     } while(res->tipo == 0b1001 || *seq != res->seq);
 
     *seq = (*seq + 1) % 16;
@@ -246,75 +273,87 @@ void linhas_servidor(int soquete, int *seq, struct mensagem *res){
 
     if(!num_erro.empty()){
         struct mensagem *erro;
-        erro = monta_mensagem("erro", num_erro, 0b10, 0b01, *seq);
+        erro = monta_mensagem("erro", num_erro, SERVIDOR, CLIENTE, *seq);
         envia_mensagem(soquete, erro);
         *seq = (*seq+1)%16;
         cout << "erro no linhas" << endl;
         return;
     }
 
-    struct mensagem *ack = monta_mensagem("ack", "", 0b10, 0b01, *seq);
+    struct mensagem *ack = monta_mensagem("ack", "", SERVIDOR, CLIENTE, *seq);
     envia_mensagem(soquete, ack);
     *seq = (*seq + 1) % 16;
 
     // precisa aguardar o numero de sequencia aumentar no lado do cliente
     do{
-        res = espera_mensagem(soquete, 0b01, *seq);
+        res = espera_mensagem(soquete, CLIENTE, *seq);
     } while(string_mensagem(res->tipo) != "linha_dados" || res->seq != *seq);
 
-    std::ifstream myfile(arquivo);
+    std::ifstream arquivo_stream(arquivo);
     string linha, linhas;
 
     for(int i: res->dados)
         linhas.push_back(i);
 
-    string linha_inicial = strtok((char *)linhas.c_str(), "-");
-    string linha_final = strtok(NULL, "\n");
+    int linha_inicial = atoi(strtok((char *)linhas.c_str(), "-"));
+    int linha_final = atoi(strtok(NULL, "\n"));
+    int linhas_arquivo = conta_linhas(arquivo); 
+    
 
-    int j = 1;
     // avança até a linha necessária
-    if(stoi(linha_inicial) > 1){
-        while(getline(myfile, linha) && j < stoi(linha_inicial)){
-            j++;
+    if(linha_inicial <= linhas_arquivo && linha_inicial > 0){
+        int j = 1;
+        if(linha_inicial > 1){
+            while(getline(arquivo_stream, linha) && j < linha_inicial){
+                j++;
+            }
         }
-    }
 
-    while(getline(myfile, linha) && j < stoi(linha_final)){
-        string dados = linha + '\n';
-        int parte_tam, dados_tam;
-        string parte;
+        while(getline(arquivo_stream, linha) && j <= linha_final){
+            string dados = linha + '\n';
+            int parte_tam, dados_tam;
+            string parte;
 
-        dados_tam = dados.length();
-        parte_tam = (dados_tam >= 15? 15 : dados_tam);
-        parte = dados.substr(0, parte_tam);
+            dados_tam = dados.length();
+            parte_tam = (dados_tam >= 15? 15 : dados_tam);
+            parte = dados.substr(0, parte_tam);
 
-        msg = monta_mensagem("conteudo", parte,  0b10, 0b01, *seq);
+            msg = monta_mensagem("conteudo", parte,  0b10, CLIENTE, *seq);
+            do{
+                envia_mensagem(soquete, msg);
+                res = espera_mensagem(soquete, CLIENTE, *seq);
+            } while(res->tipo == 0b1001 || *seq != res->seq);
+
+            *seq = (*seq + 1) % 16;
+
+            for(int i = 15; i < dados_tam; i+=15){
+                parte_tam = (dados_tam-i >= 15? 15 : dados_tam-i);
+                parte = dados.substr(i, parte_tam);
+                msg = monta_mensagem("conteudo", parte,  0b10, CLIENTE, *seq);
+
+                do{
+                    envia_mensagem(soquete, msg);
+                    res = espera_mensagem(soquete, CLIENTE, *seq);
+                } while(res->tipo == 0b1001 || *seq != res->seq);
+            
+                *seq = (*seq + 1) % 16;			
+            }
+            j++;
+
+        }
+    } else {
+        msg = monta_mensagem("conteudo", "",  0b10, CLIENTE, *seq);
         do{
             envia_mensagem(soquete, msg);
-            res = espera_mensagem(soquete, 0b01, *seq);
+            res = espera_mensagem(soquete, CLIENTE, *seq);
         } while(res->tipo == 0b1001 || *seq != res->seq);
 
         *seq = (*seq + 1) % 16;
-
-        for(int i = 15; i < dados_tam; i+=15){
-            parte_tam = (dados_tam-i >= 15? 15 : dados_tam-i);
-            parte = dados.substr(i, parte_tam);
-            msg = monta_mensagem("conteudo", parte,  0b10, 0b01, *seq);
-
-            do{
-                envia_mensagem(soquete, msg);
-                res = espera_mensagem(soquete, 0b01, *seq);
-            } while(res->tipo == 0b1001 || *seq != res->seq);
-        
-            *seq = (*seq + 1) % 16;			
-        }
-        j++;
-
     }
     do{
-        msg = monta_mensagem("fim", "",  0b10, 0b01, *seq);
+        msg = monta_mensagem("fim", "",  0b10, CLIENTE, *seq);
         envia_mensagem(soquete, msg);
-        res = espera_mensagem(soquete, 0b01, *seq);
+        res = espera_mensagem(soquete, CLIENTE, *seq);
     } while(res->tipo == 0b1001 || *seq != res->seq);
 
     *seq = (*seq + 1) % 16;
@@ -331,21 +370,21 @@ void edit_servidor(int soquete, int *seq, struct mensagem *res){
 
     if(!num_erro.empty()){
         struct mensagem *erro;
-        erro = monta_mensagem("erro", num_erro, 0b10, 0b01, *seq);
+        erro = monta_mensagem("erro", num_erro, SERVIDOR, CLIENTE, *seq);
         envia_mensagem(soquete, erro);
         *seq = (*seq+1)%16;
         cout << "erro no edit" << endl;
         return;
     }
 
-    ack = monta_mensagem("ack", "", 0b10, 0b01, *seq);
+    ack = monta_mensagem("ack", "", SERVIDOR, CLIENTE, *seq);
     envia_mensagem(soquete, ack);
     *seq = (*seq+1)%16;
     do{
-        res = espera_mensagem(soquete, 0b01, *seq);
+        res = espera_mensagem(soquete, CLIENTE, *seq);
     }while(res->tipo != 0b1010 || *seq != res->seq);
 
-    ack = monta_mensagem("ack", "", 0b10, 0b01, *seq);
+    ack = monta_mensagem("ack", "", SERVIDOR, CLIENTE, *seq);
     envia_mensagem(soquete, ack);
     *seq = (*seq+1)%16;
     
@@ -353,9 +392,9 @@ void edit_servidor(int soquete, int *seq, struct mensagem *res){
         linha.push_back(res->dados[i]);
 
     do{
-        res = espera_mensagem(soquete, 0b01, *seq);
+        res = espera_mensagem(soquete, CLIENTE, *seq);
         if(res->tipo == 0b1100 && *seq == res->seq){
-            ack = monta_mensagem("ack", "", 0b10, 0b01, *seq);
+            ack = monta_mensagem("ack", "", SERVIDOR, CLIENTE, *seq);
             envia_mensagem(soquete, ack);
             *seq = (*seq+1)%16;
             for(int i = 0; i < res->tam ; i++)
@@ -364,7 +403,7 @@ void edit_servidor(int soquete, int *seq, struct mensagem *res){
         }
     } while(res->tipo != 0b1101 || *seq != res->seq);
         
-    ack = monta_mensagem("ack", "", 0b10, 0b01, *seq);
+    ack = monta_mensagem("ack", "", SERVIDOR, CLIENTE, *seq);
     envia_mensagem(soquete, ack);
     *seq = (*seq+1)%16;
 
@@ -385,21 +424,21 @@ void compilar_servidor(int soquete, int *seq, struct mensagem *res){
 
     if(!num_erro.empty()){
         struct mensagem *erro;
-        erro = monta_mensagem("erro", num_erro, 0b10, 0b01, *seq);
+        erro = monta_mensagem("erro", num_erro, SERVIDOR, CLIENTE, *seq);
         envia_mensagem(soquete, erro);
         *seq = (*seq+1)%16;
         cout << "erro no compilar" << endl;
         return;
     }
 
-    ack = monta_mensagem("ack", "", 0b10, 0b01, *seq);
+    ack = monta_mensagem("ack", "", SERVIDOR, CLIENTE, *seq);
     envia_mensagem(soquete, ack);
     *seq = (*seq+1)%16;
 
     do{
-        res = espera_mensagem(soquete, 0b01, *seq);
+        res = espera_mensagem(soquete, CLIENTE, *seq);
         if(res->tipo == 0b1100 && *seq == res->seq){
-            ack = monta_mensagem("ack", "", 0b10, 0b01, *seq);
+            ack = monta_mensagem("ack", "", SERVIDOR, CLIENTE, *seq);
             envia_mensagem(soquete, ack);
             *seq = (*seq+1)%16;
 
@@ -408,7 +447,7 @@ void compilar_servidor(int soquete, int *seq, struct mensagem *res){
         }
     } while(res->tipo != 0b1101 || *seq != res->seq);
     
-    ack = monta_mensagem("ack", "", 0b10, 0b01, *seq);
+    ack = monta_mensagem("ack", "", SERVIDOR, CLIENTE, *seq);
     envia_mensagem(soquete, ack);
     *seq = (*seq + 1) % 16;
 
@@ -432,11 +471,11 @@ void compilar_servidor(int soquete, int *seq, struct mensagem *res){
         for(int i = 0; i < dados_tam; i+=15){
             parte_tam = (dados_tam-i >= 15? 15 : dados_tam-i);
             parte = dados.substr(i, parte_tam);
-            msg = monta_mensagem("conteudo", parte,  0b10, 0b01, *seq);
+            msg = monta_mensagem("conteudo", parte,  0b10, CLIENTE, *seq);
 
             do{
                 envia_mensagem(soquete, msg);
-                res = espera_mensagem(soquete, 0b01, *seq);
+                res = espera_mensagem(soquete, CLIENTE, *seq);
             } while(res->tipo != 0b1000 || *seq != res->seq);
         
             *seq = (*seq + 1) % 16;			
@@ -444,9 +483,9 @@ void compilar_servidor(int soquete, int *seq, struct mensagem *res){
     }
 
     do{
-        msg = monta_mensagem("fim", "",  0b10, 0b01, *seq);
+        msg = monta_mensagem("fim", "",  0b10, CLIENTE, *seq);
         envia_mensagem(soquete, msg);
-        res = espera_mensagem(soquete, 0b01, *seq);
+        res = espera_mensagem(soquete, CLIENTE, *seq);
     } while(res->tipo == 0b1001 || *seq != res->seq);
      
 
