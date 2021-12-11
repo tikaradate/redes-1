@@ -216,27 +216,31 @@ void edit_cliente(int soquete, int *seq, string arquivo, string linha, string te
     string edit_res, parte;
     int parte_tam, texto_tam;
 
-
     msg = monta_mensagem("edit", arquivo, 0b01, 0b10, *seq);
     do{
         envia_mensagem(soquete, msg);
         res = espera_mensagem(soquete, 0b10, *seq);
-    } while(res->tipo == 0b1001);
+    } while((res->tipo != 0b1000 && res->tipo != 0b1111) || *seq != res->seq);
+
+    if(res->tipo == 0b1111){
+        imprime_erro(res);
+        *seq = (*seq+1)%16;
+        return;
+    }
 
     *seq = (*seq + 1) % 16;
-
+    cout << *seq << endl;
     msg = monta_mensagem("linha_dados", linha, 0b01, 0b10, *seq);
     do{
         envia_mensagem(soquete, msg);
         res = espera_mensagem(soquete, 0b10, *seq);
-    } while(res->tipo == 0b1001);
+    } while(res->tipo == 0b1001 || *seq != res->seq);
 
     *seq = (*seq + 1) % 16;
 
-    // tem que jogar fora as aspas
-    texto_tam = texto.length();
+    texto_tam = texto.length()-1;
 
-    for(int i = 0; i < texto_tam; i+=15){
+    for(int i = 1; i < texto_tam; i+=15){
         parte_tam = (texto_tam-i >= 15? 15 : texto_tam-i);
         parte = texto.substr(i, parte_tam);
         msg = monta_mensagem("conteudo", parte,   0b01, 0b10, *seq);
@@ -244,7 +248,7 @@ void edit_cliente(int soquete, int *seq, string arquivo, string linha, string te
         do{
             envia_mensagem(soquete, msg);
             res = espera_mensagem(soquete, 0b10, *seq);
-        } while(res->tipo == 0b1001);
+        } while(res->tipo == 0b1001 || *seq != res->seq);
 
         *seq = (*seq + 1) % 16;			
     }
@@ -253,7 +257,7 @@ void edit_cliente(int soquete, int *seq, string arquivo, string linha, string te
         msg = monta_mensagem("fim", "",   0b01, 0b10, *seq);
         envia_mensagem(soquete, msg);
         res = espera_mensagem(soquete, 0b10, *seq);
-    } while(res->tipo == 0b1001);
+    } while(res->tipo == 0b1001 || *seq != res->seq);
 
     *seq = (*seq + 1) % 16;
 }

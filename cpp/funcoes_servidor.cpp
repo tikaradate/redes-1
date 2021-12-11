@@ -81,6 +81,7 @@ void ls_servidor(int soquete, int *seq, struct mensagem *res){
         envia_mensagem(soquete, msg);
         res = espera_mensagem(soquete, 0b01, *seq);
     } while(res->tipo == 0b1001 || *seq != res->seq);
+
     *seq = (*seq + 1) % 16;	
 
 }
@@ -306,38 +307,55 @@ void linhas_servidor(int soquete, int *seq, struct mensagem *res){
 
 void edit_servidor(int soquete, int *seq, struct mensagem *res){
     struct mensagem *ack;
-    string texto, arquivo, linha;
+    string texto, arquivo, linha, num_erro;
     
     for(int i = 0; i < res->tam ; i++)
         arquivo.push_back(res->dados[i]);
 
-    ack = monta_mensagem("ack", "", 0b10, 0b01, *seq);
-    *seq = (*seq+1)%16;
-    envia_mensagem(soquete, ack);
+    num_erro = checa_arquivo(arquivo);
 
+    if(!num_erro.empty()){
+        struct mensagem *erro;
+        erro = monta_mensagem("erro", num_erro, 0b10, 0b01, *seq);
+        envia_mensagem(soquete, erro);
+        *seq = (*seq+1)%16;
+        cout << "erro no edit" << endl;
+        return;
+    }
+
+    ack = monta_mensagem("ack", "", 0b10, 0b01, *seq);
+    envia_mensagem(soquete, ack);
+    *seq = (*seq+1)%16;
+    cout << *seq << endl;
+    cout << "morre aqui antes lol" << endl;
     do{
         res = espera_mensagem(soquete, 0b01, *seq);
-    }while(res->tipo != 0b1010);
+        cout << (int) res->seq << ' ' << *seq << endl;
+    }while(res->tipo != 0b1010 || *seq != res->seq);
 
+    ack = monta_mensagem("ack", "", 0b10, 0b01, *seq);
+    envia_mensagem(soquete, ack);
+    *seq = (*seq+1)%16;
+    
     for(int i = 0; i < res->tam ; i++)
         linha.push_back(res->dados[i]);
 
-    *seq = (*seq+1)%16;
     do{
-        ack = monta_mensagem("ack", "", 0b10, 0b01, *seq);
-        envia_mensagem(soquete, ack);
-
         res = espera_mensagem(soquete, 0b01, *seq);
-        if(*seq == res->seq){
+        if(res->tipo == 0b1100 && *seq == res->seq){
+            ack = monta_mensagem("ack", "", 0b10, 0b01, *seq);
+            envia_mensagem(soquete, ack);
+            *seq = (*seq+1)%16;
             for(int i = 0; i < res->tam ; i++)
                 texto.push_back(res->dados[i]);
-            *seq = (*seq+1)%16;
+            
         }
-    } while(res->tipo != 0b1101);
+    } while(res->tipo != 0b1101 || *seq != res->seq);
         
     ack = monta_mensagem("ack", "", 0b10, 0b01, *seq);
     envia_mensagem(soquete, ack);
-    
+    *seq = (*seq+1)%16;
+
     string sed = "sed -i '" + linha + "s/.*/" + texto + "/' " + arquivo;
     system(sed.c_str());
     // checar se a linha é a n+1, então criar ela
