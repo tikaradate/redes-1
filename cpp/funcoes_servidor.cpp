@@ -64,18 +64,7 @@ void ls_servidor(int soquete, int *seq, struct mensagem *res){
     dados = ls(".");
     ls_tam = dados.length();
 
-    parte_tam = (ls_tam >= 15? 15 : ls_tam);
-    parte = dados.substr(0, parte_tam);
-
-    msg = monta_mensagem("ls_dados", parte,  0b10, CLIENTE, *seq);
-    do{
-        envia_mensagem(soquete, msg);
-        res = espera_mensagem(soquete, CLIENTE, *seq);
-    }while(res->tipo == 0b1001 || *seq != res->seq);
-
-    *seq = (*seq + 1) % 16;
-
-    for(int i = 15; i < ls_tam; i+=15){
+    for(int i = 0; i < ls_tam; i+=15){
         parte_tam = (ls_tam-i >= 15? 15 : ls_tam-i);
         parte = dados.substr(i, parte_tam);
         msg = monta_mensagem("ls_dados", parte,  0b10, CLIENTE, *seq);
@@ -124,18 +113,8 @@ void ver_servidor(int soquete, int *seq, struct mensagem *res){
         string parte;
 
         dados_tam = dados.length();
-        parte_tam = (dados_tam >= 15? 15 : dados_tam);
-        parte = dados.substr(0, parte_tam);
-        
-        msg = monta_mensagem("conteudo", parte,  0b10, CLIENTE, *seq);
-        do{
-            envia_mensagem(soquete, msg);
-            res = espera_mensagem(soquete, CLIENTE, *seq);
-        } while(res->tipo == 0b1001 || *seq != res->seq);
 
-        *seq = (*seq + 1) % 16;
-
-        for(int i = 15; i < dados_tam; i+=15){
+        for(int i = 0; i < dados_tam; i+=15){
             parte_tam = (dados_tam-i >= 15? 15 : dados_tam-i);
             parte = dados.substr(i, parte_tam);
             msg = monta_mensagem("conteudo", parte,  0b10, CLIENTE, *seq);
@@ -208,19 +187,8 @@ void linha_servidor(int soquete, int *seq, struct mensagem *res){
         string parte;
 
         dados_tam = dados.length();
-        cout << dados;
-        parte_tam = (dados_tam >= 15? 15 : dados_tam);
-        parte = dados.substr(0, parte_tam);
 
-        msg = monta_mensagem("conteudo", parte,  0b10, CLIENTE, *seq);
-        do{
-            envia_mensagem(soquete, msg);
-            res = espera_mensagem(soquete, CLIENTE, *seq);
-        } while(res->tipo == 0b1001 || *seq != res->seq);
-
-        *seq = (*seq + 1) % 16;
-
-        for(int i = 15; i < dados_tam; i+=15){
+        for(int i = 0; i < dados_tam; i+=15){
             parte_tam = (dados_tam-i >= 15? 15 : dados_tam-i);
             parte = dados.substr(i, parte_tam);
             msg = monta_mensagem("conteudo", parte,  0b10, CLIENTE, *seq);
@@ -233,6 +201,7 @@ void linha_servidor(int soquete, int *seq, struct mensagem *res){
             *seq = (*seq + 1) % 16;			
         }
     } else {
+        // manda vazio pois a linha não existe
         msg = monta_mensagem("conteudo", "",  0b10, CLIENTE, *seq);
         do{
             envia_mensagem(soquete, msg);
@@ -289,42 +258,28 @@ void linhas_servidor(int soquete, int *seq, struct mensagem *res){
     
 
     // avança até a linha necessária
-    if(linha_inicial <= linhas_arquivo && linha_inicial > 0 && linha_final <= linha_final){
+    if(linha_inicial <= linhas_arquivo && linha_inicial > 0 && linha_inicial <= linha_final){
         int j = 1;
-        if(linha_inicial > 1){
-            while(getline(arquivo_stream, linha) && j < linha_inicial){
-                j++;
-            }
-        }
-
         while(getline(arquivo_stream, linha) && j <= linha_final){
-            string dados = linha + '\n';
-            int parte_tam, dados_tam;
-            string parte;
+            if(j >= linha_inicial){
+                string dados = linha + '\n';
+                int parte_tam, dados_tam;
+                string parte;
 
-            dados_tam = dados.length();
-            parte_tam = (dados_tam >= 15? 15 : dados_tam);
-            parte = dados.substr(0, parte_tam);
-
-            msg = monta_mensagem("conteudo", parte,  0b10, CLIENTE, *seq);
-            do{
-                envia_mensagem(soquete, msg);
-                res = espera_mensagem(soquete, CLIENTE, *seq);
-            } while(res->tipo == 0b1001 || *seq != res->seq);
-
-            *seq = (*seq + 1) % 16;
-
-            for(int i = 15; i < dados_tam; i+=15){
-                parte_tam = (dados_tam-i >= 15? 15 : dados_tam-i);
-                parte = dados.substr(i, parte_tam);
-                msg = monta_mensagem("conteudo", parte,  0b10, CLIENTE, *seq);
-
-                do{
-                    envia_mensagem(soquete, msg);
-                    res = espera_mensagem(soquete, CLIENTE, *seq);
-                } while(res->tipo == 0b1001 || *seq != res->seq);
+                dados_tam = dados.length();
             
-                *seq = (*seq + 1) % 16;			
+                for(int i = 0; i < dados_tam; i+=15){
+                    parte_tam = (dados_tam-i >= 15? 15 : dados_tam-i);
+                    parte = dados.substr(i, parte_tam);
+                    msg = monta_mensagem("conteudo", parte,  0b10, CLIENTE, *seq);
+
+                    do{
+                        envia_mensagem(soquete, msg);
+                        res = espera_mensagem(soquete, CLIENTE, *seq);
+                    } while(res->tipo == 0b1001 || *seq != res->seq);
+                
+                    *seq = (*seq + 1) % 16;			
+                }
             }
             j++;
 
