@@ -12,8 +12,9 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <string>
+#include <fstream>
 
-#include "comms.h"
+#include "misc.h"
 
 using std::string;
 
@@ -98,4 +99,14 @@ string ls(const char *dir)
 		s.push_back(' ');
 	}
     return s;
+}
+
+int conta_linhas(string arquivo){
+    std::ifstream arq (arquivo);   
+    int linhas = 0;
+    string linha;
+    while (std::getline(arq, linha))
+        linhas++;
+
+    return linhas;
 }

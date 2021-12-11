@@ -9,7 +9,7 @@
 
 #include "funcoes_servidor.h"
 #include "mensagem.h"
-#include "comms.h"
+#include "misc.h"
 
 using std::cout;
 using std::cerr;
@@ -17,17 +17,6 @@ using std::endl;
 
 #define CLIENTE 0b01
 #define SERVIDOR 0b10
-
-int conta_linhas(string arquivo){
-    std::ifstream arq (arquivo);   
-    int linhas = 0;
-    string linha;
-    while (std::getline(arq, linha))
-        linhas++;
-
-    return linhas;
-}
-
 
 void teste_nack(int soquete, int seq){
     for(int i = 0; i < 5; i++){
@@ -41,10 +30,8 @@ void teste_nack(int soquete, int seq){
     }
 }
 
-
 void cd_servidor (int soquete, int *seq, struct mensagem *res){
     string diretorio;
-    
 	for(int i: res->dados)
 		diretorio.push_back(i);
 
@@ -209,6 +196,7 @@ void linha_servidor(int soquete, int *seq, struct mensagem *res){
 
     if(qt_linha > 0 && qt_linha <= linhas_arquivo){
         int j = 1;
+        // avança até achar a linha desejada
         if(qt_linha > 1){
             while(getline(arquivo_stream, linha) && j < qt_linha){
                 j++;
@@ -301,7 +289,7 @@ void linhas_servidor(int soquete, int *seq, struct mensagem *res){
     
 
     // avança até a linha necessária
-    if(linha_inicial <= linhas_arquivo && linha_inicial > 0){
+    if(linha_inicial <= linhas_arquivo && linha_inicial > 0 && linha_final <= linha_final){
         int j = 1;
         if(linha_inicial > 1){
             while(getline(arquivo_stream, linha) && j < linha_inicial){
@@ -377,9 +365,12 @@ void edit_servidor(int soquete, int *seq, struct mensagem *res){
         return;
     }
 
+    // esta tudo ok
     ack = monta_mensagem("ack", "", SERVIDOR, CLIENTE, *seq);
     envia_mensagem(soquete, ack);
     *seq = (*seq+1)%16;
+
+    // espera o conteudo de linha do cliente
     do{
         res = espera_mensagem(soquete, CLIENTE, *seq);
     }while(res->tipo != 0b1010 || *seq != res->seq);
@@ -407,10 +398,17 @@ void edit_servidor(int soquete, int *seq, struct mensagem *res){
     envia_mensagem(soquete, ack);
     *seq = (*seq+1)%16;
 
-    string sed = "sed -i '" + linha + "s/.*/" + texto + "/' " + arquivo;
-    system(sed.c_str());
-    // checar se a linha é a n+1, então criar ela
-    // editar o texto na linha :)
+    int linhas_arquivo = conta_linhas(arquivo);
+
+    if(stoi(linha) <= linhas_arquivo){
+        string sed = "sed -i '" + linha + "s`.*`" + texto + "`' " + arquivo;
+        system(sed.c_str());
+    } else if (stoi(linha) == linhas_arquivo + 1){
+        std::ofstream outfile;
+        outfile.open(arquivo, std::ios_base::app);
+        outfile << '\n' + texto;
+    }
+        
 }
 
 void compilar_servidor(int soquete, int *seq, struct mensagem *res){

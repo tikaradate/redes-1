@@ -17,7 +17,7 @@
 #include <iostream>
 
 #include "mensagem.h"
-#include "comms.h"
+#include "misc.h"
 #include "funcoes_cliente.h"
 
 using std::cout;
@@ -31,7 +31,8 @@ int main(){
 	int soquete;
  	soquete = raw_socket("lo");
 	int seq = 0;
-	while(2!=1){
+	
+	while(true){
 		char linha[1024];
 		char *str = fgets(linha, 1024, stdin);
 		if(!str){

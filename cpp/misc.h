@@ -7,3 +7,5 @@ int raw_socket(char *dev);
 string checa_arquivo(string arquivo);
 
 string ls(const char *dir);
+
+int conta_linhas(string arquivo);

@@ -19,7 +19,7 @@
 #include <cmath>
 
 #include "funcoes_servidor.h"
-#include "comms.h"
+#include "misc.h"
 #include "mensagem.h"
 
 using std::cout;
@@ -31,7 +31,7 @@ int main(){
 	soquete = raw_socket("lo");
 
 	int seq = 0;
-	while(1){
+	while(true){
 		struct mensagem *res, *nack;
 
 		res = espera_mensagem(soquete, 0b01, seq);
