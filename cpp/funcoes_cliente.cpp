@@ -1,7 +1,9 @@
 #ifndef __FUNCOES_CLIENTE__
 #define __FUNCOES_CLIENTE__
+
 #include <string>
 #include <iostream>
+
 #include "funcoes_cliente.h"
 #include "mensagem.h"
 
@@ -38,8 +40,9 @@ string ls_cliente(int soquete, int *seq){
     do{
         envia_mensagem(soquete, msg);
         res = espera_mensagem(soquete, SERVIDOR, *seq);
-    } while(string_mensagem(res->tipo) == "nack" || 
-            string_mensagem(res->tipo) != "ls_dados" || 
+    } while(string_mensagem(res->tipo) == "nack" ||
+            (string_mensagem(res->tipo) != "erro" &&
+             string_mensagem(res->tipo) != "ls_dados") || 
             *seq != res->seq);
     
     while(!checa_paridade(res)){
@@ -60,7 +63,7 @@ string ls_cliente(int soquete, int *seq){
 
     do{
         res = espera_mensagem(soquete, SERVIDOR, *seq);
-        if(res->tipo == 0b1011 && res->seq == *seq){
+        if(string_mensagem(res->tipo) == "ls_dados" && res->seq == *seq){
             
             while(!checa_paridade(res)){
                 struct mensagem *nack;
@@ -79,7 +82,7 @@ string ls_cliente(int soquete, int *seq){
                 ls_res.push_back(res->dados[i]);
 
         }
-    } while(res->tipo != 0b1101 || *seq != res->seq);
+    } while(string_mensagem(res->tipo) != "fim" || *seq != res->seq);
     
     while(!checa_paridade(res)){
         struct mensagem *nack;
@@ -87,7 +90,7 @@ string ls_cliente(int soquete, int *seq){
         envia_mensagem(soquete, nack);
         do{
             res = espera_mensagem(soquete, SERVIDOR, *seq);
-        }while(string_mensagem(res->tipo) != "ls_dados" || *seq != res->seq);
+        }while(string_mensagem(res->tipo) != "fim" || *seq != res->seq);
     }
 
     msg = monta_mensagem("ack", "", CLIENTE, SERVIDOR, *seq);
@@ -106,11 +109,12 @@ string ver_cliente(int soquete, int *seq, string arquivo){
     do{
         envia_mensagem(soquete, msg);
         res = espera_mensagem(soquete, SERVIDOR, *seq);
-    } while(string_mensagem(res->tipo) == "nack" || 
-            string_mensagem(res->tipo) != "conteudo" || 
+    } while(string_mensagem(res->tipo) == "nack" ||
+            (string_mensagem(res->tipo) != "erro" &&
+             string_mensagem(res->tipo) != "conteudo") || 
             *seq != res->seq);
     
-    if(res->tipo == 0b1111){
+    if(string_mensagem(res->tipo) == "erro"){
         imprime_erro(res);
         *seq = (*seq+1)%16;
         return "";
@@ -134,7 +138,7 @@ string ver_cliente(int soquete, int *seq, string arquivo){
 
     do{
         res = espera_mensagem(soquete, SERVIDOR, *seq);
-        if(res->tipo == 0b1100 && res->seq == *seq){
+        if(string_mensagem(res->tipo) == "conteudo"  && res->seq == *seq){
             while(!checa_paridade(res)){
                 struct mensagem *nack;
                 nack = monta_mensagem("nack", "", CLIENTE, SERVIDOR, *seq);
@@ -151,7 +155,7 @@ string ver_cliente(int soquete, int *seq, string arquivo){
             for(int i = 0; i < res->tam ; i++)
                 ver_res.push_back(res->dados[i]);
         }
-    } while(res->tipo != 0b1101 || *seq != res->seq);
+    } while(string_mensagem(res->tipo) != "fim"|| *seq != res->seq);
 
     while(!checa_paridade(res)){
         struct mensagem *nack;
@@ -178,11 +182,12 @@ string linha_cliente(int soquete, int *seq, string arquivo, string linha){
     do{
         envia_mensagem(soquete, msg);
         res = espera_mensagem(soquete, SERVIDOR, *seq);
-    } while(string_mensagem(res->tipo) == "nack" || 
-            string_mensagem(res->tipo) != "ack" || 
+    } while(string_mensagem(res->tipo) == "nack" ||
+            (string_mensagem(res->tipo) != "erro" &&
+             string_mensagem(res->tipo) != "ack") || 
             *seq != res->seq);
 
-    if(res->tipo == 0b1111){
+    if(string_mensagem(res->tipo) == "erro"){
         imprime_erro(res);
         *seq = (*seq+1)%16;
         return "";
@@ -217,7 +222,7 @@ string linha_cliente(int soquete, int *seq, string arquivo, string linha){
 
     do{
         res = espera_mensagem(soquete, SERVIDOR, *seq);
-        if(res->tipo == 0b1100 && *seq == res->seq){
+        if(string_mensagem(res->tipo) == "conteudo" && *seq == res->seq){
             while(!checa_paridade(res)){
                 struct mensagem *nack;
                 nack = monta_mensagem("nack", "", CLIENTE, SERVIDOR, *seq);
@@ -233,7 +238,7 @@ string linha_cliente(int soquete, int *seq, string arquivo, string linha){
             for(int i = 0; i < res->tam ; i++)
                 linha_res.push_back(res->dados[i]);
         }
-    } while(res->tipo != 0b1101 || *seq != res->seq);
+    } while(string_mensagem(res->tipo) != "fim" || *seq != res->seq);
 
     while(!checa_paridade(res)){
         struct mensagem *nack;
@@ -259,9 +264,11 @@ string linhas_cliente(int soquete, int *seq, string arquivo, string linha_inicia
     do{
         envia_mensagem(soquete, msg);
         res = espera_mensagem(soquete, SERVIDOR, *seq);
-    } while((res->tipo != 0b1000 && res->tipo != 0b1111) || *seq != res->seq);
+    } while((string_mensagem(res->tipo) != "ack" && 
+             string_mensagem(res->tipo) != "erro") || 
+            *seq != res->seq);
 
-    if(res->tipo == 0b1111){
+    if(string_mensagem(res->tipo) == "erro"){
         imprime_erro(res);
         *seq = (*seq+1)%16;
         return "";
@@ -273,7 +280,7 @@ string linhas_cliente(int soquete, int *seq, string arquivo, string linha_inicia
     do{
         envia_mensagem(soquete, msg);
         res = espera_mensagem(soquete, SERVIDOR, *seq);
-    } while(res->tipo != 0b1100 || *seq != res->seq);
+    } while(string_mensagem(res->tipo) != "conteudo" || *seq != res->seq);
 
     while(!checa_paridade(res)){
         struct mensagem *nack;
@@ -293,7 +300,7 @@ string linhas_cliente(int soquete, int *seq, string arquivo, string linha_inicia
 
     do{
         res = espera_mensagem(soquete, SERVIDOR, *seq);
-        if(res->tipo == 0b1100 && *seq == res->seq){
+        if(string_mensagem(res->tipo) == "conteudo" && *seq == res->seq){
             while(!checa_paridade(res)){
                 struct mensagem *nack;
                 nack = monta_mensagem("nack", "", CLIENTE, SERVIDOR, *seq);
@@ -310,7 +317,7 @@ string linhas_cliente(int soquete, int *seq, string arquivo, string linha_inicia
             for(int i = 0; i < res->tam ; i++)
                 linhas_res.push_back(res->dados[i]);
         }
-    } while(res->tipo != 0b1101 || *seq != res->seq);
+    } while(string_mensagem(res->tipo) != "fim" || *seq != res->seq);
         
     while(!checa_paridade(res)){
         struct mensagem *nack;
@@ -338,7 +345,9 @@ void edit_cliente(int soquete, int *seq, string arquivo, string linha, string te
     do{
         envia_mensagem(soquete, msg);
         res = espera_mensagem(soquete, SERVIDOR, *seq);
-    } while((res->tipo != 0b1000 && res->tipo != 0b1111) || *seq != res->seq);
+    } while((string_mensagem(res->tipo) != "ack" && 
+             string_mensagem(res->tipo) != "erro") || 
+            *seq != res->seq);
 
     if(res->tipo == 0b1111){
         imprime_erro(res);
@@ -389,9 +398,11 @@ string compilar_cliente(int soquete, int *seq, string arquivo, string opcoes){
     do{
         envia_mensagem(soquete, msg);
         res = espera_mensagem(soquete, SERVIDOR, *seq);
-    } while((res->tipo != 0b1000 && res->tipo != 0b1111) || *seq != res->seq);
+    } while((string_mensagem(res->tipo) != "ack" && 
+             string_mensagem(res->tipo) != "erro") || 
+            *seq != res->seq);
 
-    if(res->tipo == 0b1111){
+    if(string_mensagem(res->tipo) == "erro"){
         imprime_erro(res);
         *seq = (*seq+1)%16;
         return "";
@@ -403,27 +414,27 @@ string compilar_cliente(int soquete, int *seq, string arquivo, string opcoes){
     for(int i = 0; i < opcoes_tam; i+=15){
         parte_tam = (opcoes_tam-i >= 15? 15 : opcoes_tam-i);
         parte = opcoes.substr(i, parte_tam);
-        msg = monta_mensagem("conteudo", parte,   0b01, SERVIDOR, *seq);
+        msg = monta_mensagem("conteudo", parte, CLIENTE, SERVIDOR, *seq);
 
         do{
             envia_mensagem(soquete, msg);
             res = espera_mensagem(soquete, SERVIDOR, *seq);
-        } while(res->tipo == 0b1001 || *seq != res->seq);
+        } while(string_mensagem(res->tipo) == "nack" || *seq != res->seq);
 
         *seq = (*seq + 1) % 16;			
     }
     
-    msg = monta_mensagem("fim", "",   0b01, SERVIDOR, *seq);
+    msg = monta_mensagem("fim", "", CLIENTE, SERVIDOR, *seq);
     do{
         envia_mensagem(soquete, msg);
         res = espera_mensagem(soquete, SERVIDOR, *seq);
-    } while(res->tipo != 0b1000 || *seq != res->seq);
+    } while(string_mensagem(res->tipo) != "ack" || *seq != res->seq);
     *seq = (*seq + 1) % 16;
 
     // resposta do servidor a partir daqui
     do{
         res = espera_mensagem(soquete, SERVIDOR, *seq);
-        if(res->tipo == 0b1100 && *seq == res->seq){
+        if(string_mensagem(res->tipo) == "conteudo" && *seq == res->seq){
 
             while(!checa_paridade(res)){
                 struct mensagem *nack;
@@ -441,7 +452,7 @@ string compilar_cliente(int soquete, int *seq, string arquivo, string opcoes){
             for(int i = 0; i < res->tam ; i++)
                 compilar_res.push_back(res->dados[i]);
         }
-    } while(res->tipo != 0b1101 || *seq != res->seq);
+    } while(string_mensagem(res->tipo) != "fim" || *seq != res->seq);
     
 
     while(!checa_paridade(res)){

@@ -1,10 +1,15 @@
+#ifndef __MENSAGEM__
+#define __MENSAGEM__
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <inttypes.h> 
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <inttypes.h> 
+
+
 #include <string>
-#include <cstring>
 #include <iostream>
 
 #include "mensagem.h"
@@ -126,25 +131,6 @@ string string_mensagem(int tipo){
 	return "";
 }
 
-// struct mensagem *monta_mensagem(string tipo, string dados, int src, int dst, int seq){
-// 	struct mensagem *msg = (struct mensagem *) malloc(sizeof(struct mensagem));
-	
-// 	msg->ini = 0b01111110;
-// 	msg->dst = dst;
-// 	msg->src = src;
-// 	msg->tipo = tipo_mensagem(tipo);
-// 	if(dados.empty()) msg->tam = 0;
-// 	else msg->tam = dados.length();
-// 	msg->seq = seq;
-// 	msg->paridade = msg->tam ^ msg->seq ^ msg->tipo;
-// 	for(int i = 0; i < msg->tam; i++){
-// 		msg->dados[i] = dados[i];
-// 		msg->paridade ^= dados[i]; 
-// 	}
-
-// 	return msg;
-// }
-
 struct mensagem *monta_mensagem(string tipo, string dados, int src, int dst, int seq){
 	struct mensagem *msg = (struct mensagem *) malloc(sizeof(struct mensagem));
 	
@@ -227,18 +213,20 @@ void imprime_erro(struct mensagem *msg){
 	switch (atoi((const char*) msg->dados))
 	{
 	case 1:
-		cerr << "Acesso negado" << endl;
+		cerr << "Acesso negado." << endl;
 		break;
 	case 2:
-		cerr << "Diretorio inexistente" << endl;
+		cerr << "Diretorio inexistente." << endl;
 		break;
 	case 3:
-		cerr << "Arquivo inexistente" << endl;
+		cerr << "Arquivo inexistente." << endl;
 		break;
 	case 4:
-		cerr << "Linha inexistente" << endl;
+		cerr << "Linha inexistente." << endl;
 		break;
 	default:
 		break;
 	}
 }
+
+#endif

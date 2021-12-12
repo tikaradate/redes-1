@@ -1,11 +1,14 @@
-#include <string>
-#include <cstring>
-#include <unistd.h>
-#include <dirent.h>
-#include <fstream>
-#include <iostream>
+#ifndef __FUNCOES_SERVIDOR__
+#define __FUNCOES_SERVIDOR__
 
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <dirent.h>
+
+#include <string>
+#include <fstream>
+#include <iostream>
 
 #include "funcoes_servidor.h"
 #include "mensagem.h"
@@ -20,7 +23,8 @@ using std::endl;
 
 void cd_servidor (int soquete, int *seq, struct mensagem *res){
     string diretorio;
-	for(int i: res->dados)
+	
+    for(int i: res->dados)
 		diretorio.push_back(i);
 
     int ret = chdir(diretorio.c_str());
@@ -164,6 +168,7 @@ void linha_servidor(int soquete, int *seq, struct mensagem *res){
               (res->dados[2] << 8 ) |
                res->dados[3]        ;
 
+    cout << n_linha << endl;
     if(n_linha > 0 && n_linha <= linhas_arquivo){
         int j = 1;
         // avança até achar a linha desejada
@@ -238,10 +243,8 @@ void linhas_servidor(int soquete, int *seq, struct mensagem *res){
     } while(string_mensagem(res->tipo) != "linha_dados" || res->seq != *seq);
 
     std::ifstream arquivo_stream(arquivo);
-    string linha, linhas;
+    string linha;
 
-    for(int i: res->dados)
-        linhas.push_back(i);
     int linhas_arquivo = conta_linhas(arquivo);
 
     int linha_inicial = (res->dados[0] << 24) |
@@ -302,8 +305,9 @@ void linhas_servidor(int soquete, int *seq, struct mensagem *res){
 }
 
 void edit_servidor(int soquete, int *seq, struct mensagem *res){
+    int linha;
     struct mensagem *ack;
-    string texto, arquivo, linha, num_erro;
+    string texto, arquivo, num_erro;
     
     for(int i = 0; i < res->tam ; i++)
         arquivo.push_back(res->dados[i]);
@@ -333,8 +337,10 @@ void edit_servidor(int soquete, int *seq, struct mensagem *res){
     envia_mensagem(soquete, ack);
     *seq = (*seq+1)%16;
     
-    for(int i = 0; i < res->tam ; i++)
-        linha.push_back(res->dados[i]);
+    linha = (res->dados[0] << 24) |
+            (res->dados[1] << 16) |
+            (res->dados[2] << 8 ) |
+             res->dados[3]        ;
 
     do{
         res = espera_mensagem(soquete, CLIENTE, *seq);
@@ -354,10 +360,11 @@ void edit_servidor(int soquete, int *seq, struct mensagem *res){
 
     int linhas_arquivo = conta_linhas(arquivo);
 
-    if(stoi(linha) <= linhas_arquivo){
-        string sed = "sed -i '" + linha + "s`.*`" + texto + "`' " + arquivo;
+    if(linha <= linhas_arquivo){
+        // monta o comando sed apropriado
+        string sed = "sed -i '" + std::to_string(linha) + "s`.*`" + texto + "`' " + arquivo;
         system(sed.c_str());
-    } else if (stoi(linha) == linhas_arquivo + 1){
+    } else if (linha == linhas_arquivo + 1){
         std::ofstream outfile;
         outfile.open(arquivo, std::ios_base::app);
         outfile << '\n' + texto;
@@ -447,3 +454,5 @@ void compilar_servidor(int soquete, int *seq, struct mensagem *res){
         // tratar erro ou mandar pro cliente? mas já acabou a mensagem importante aqui
     }
 }
+
+#endif

@@ -1,16 +1,21 @@
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <net/ethernet.h>
-#include <netinet/in.h>
-#include <linux/if_packet.h>
+#ifndef __MISC__
+#define __MISC__
+
 #include <linux/if.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <cstring>
+#include <sys/types.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <net/ethernet.h>
+#include <linux/if_packet.h>
+
 #include <stdio.h>
+#include <errno.h>
+#include <string.h>
+#include <stdlib.h>
 #include <dirent.h>
 #include <unistd.h>
+
 #include <string>
 #include <fstream>
 
@@ -18,7 +23,7 @@
 
 using std::string;
 
-int raw_socket(char *dev){
+int raw_socket(const char* dev){
     int soquete;
 	struct ifreq ir;
 	struct sockaddr_ll endereco;
@@ -109,3 +114,5 @@ int conta_linhas(string arquivo){
 
     return linhas;
 }
+
+#endif

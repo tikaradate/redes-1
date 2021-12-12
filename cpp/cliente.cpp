@@ -1,23 +1,22 @@
-// extern "C"
-// {
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <net/ethernet.h>
 #include <linux/if_packet.h>
 #include <linux/if.h>
-#include <stdlib.h>
-#include <string.h>
+
 #include <stdio.h>
 #include <errno.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <inttypes.h> 
 
 #include <vector>
 #include <iostream>
 
-#include "mensagem.h"
 #include "misc.h"
+#include "mensagem.h"
 #include "funcoes_cliente.h"
 
 using std::cout;
@@ -25,7 +24,6 @@ using std::cerr;
 using std::endl;
 using std::string;
 using std::vector;
-
 
 int main(){
 	int soquete;
@@ -36,7 +34,7 @@ int main(){
 		char linha[1024];
 		char *str = fgets(linha, 1024, stdin);
 		if(!str){
-			perror("Erro ao ler comando");
+			perror("Erro ao ler comando.");
 			exit(1);
 		}
 		char *comando = strtok(str, " \n");
@@ -112,14 +110,26 @@ int main(){
 			compilar_res = compilar_cliente(soquete, &seq, arquivo, opcoes);
 
 			cout << compilar_res << endl;
+		/* comandos locais */
 		} else if(strcmp(comando, "lcd") == 0){
+			int ret;
 			char *dir = strtok(NULL, "\n"); 
 			if(!dir){
-				cerr << "Precisa de um diretório\nUsagem: lcd DIRNAME" << endl;
+				cerr << "Precisa de um diretório\nUso: lcd DIRNAME" << endl;
 				continue;
 			}
 			string diretorio(dir);
-			chdir(diretorio.c_str());
+			ret = chdir(diretorio.c_str());
+
+			if(ret != 0){
+				// acesso negado
+				if(errno == EACCES){
+					cerr << "Acesso negado." << endl;
+				// diretorio inexistente/não é diretorio
+				} else if(errno == ENOENT || errno == ENOTDIR){
+					cerr << "Diretorio inexistente." << endl;;
+				}
+			}
 		} else if(strcmp(comando, "lls") == 0){
 			cout << ls(".") << endl;
 		}

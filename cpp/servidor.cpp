@@ -1,26 +1,26 @@
+#include <linux/if.h>
 #include <sys/types.h>
-#include <sys/socket.h>
 #include <sys/ioctl.h>
+#include <sys/socket.h>
 #include <net/ethernet.h>
 #include <linux/if_packet.h>
-#include <linux/if.h>
-#include <stdlib.h>
-#include <string.h>
+
+#include <math.h>
 #include <stdio.h>
 #include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+#include <dirent.h>
+#include <unistd.h>
+#include <inttypes.h>
 
-#include <inttypes.h> 
 #include <iostream>
 #include <fstream>
 #include <string>
 
-#include <dirent.h>
-#include <unistd.h>
-#include <cmath>
-
-#include "funcoes_servidor.h"
 #include "misc.h"
 #include "mensagem.h"
+#include "funcoes_servidor.h"
 
 using std::cout;
 using std::endl;

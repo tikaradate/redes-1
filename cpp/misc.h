@@ -2,7 +2,7 @@
 
 using std::string;
 
-int raw_socket(char *dev);
+int raw_socket(const char *dev);
 
 string checa_arquivo(string arquivo);
 
