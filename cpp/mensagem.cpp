@@ -126,6 +126,25 @@ string string_mensagem(int tipo){
 	return "";
 }
 
+// struct mensagem *monta_mensagem(string tipo, string dados, int src, int dst, int seq){
+// 	struct mensagem *msg = (struct mensagem *) malloc(sizeof(struct mensagem));
+	
+// 	msg->ini = 0b01111110;
+// 	msg->dst = dst;
+// 	msg->src = src;
+// 	msg->tipo = tipo_mensagem(tipo);
+// 	if(dados.empty()) msg->tam = 0;
+// 	else msg->tam = dados.length();
+// 	msg->seq = seq;
+// 	msg->paridade = msg->tam ^ msg->seq ^ msg->tipo;
+// 	for(int i = 0; i < msg->tam; i++){
+// 		msg->dados[i] = dados[i];
+// 		msg->paridade ^= dados[i]; 
+// 	}
+
+// 	return msg;
+// }
+
 struct mensagem *monta_mensagem(string tipo, string dados, int src, int dst, int seq){
 	struct mensagem *msg = (struct mensagem *) malloc(sizeof(struct mensagem));
 	
@@ -133,12 +152,38 @@ struct mensagem *monta_mensagem(string tipo, string dados, int src, int dst, int
 	msg->dst = dst;
 	msg->src = src;
 	msg->tipo = tipo_mensagem(tipo);
-	if(dados.empty()) msg->tam = 0;
-	else msg->tam = dados.length();
+	if(dados.empty()) 
+		msg->tam = 0;
+	else if (tipo == "linha_dados")
+		msg->tam = 8;
+	else
+		msg->tam = dados.length();
+
+	// para o linha e linhas é necessário converter os argumentos para inteiro
+	if(tipo == "linha_dados"){
+		char *num = strtok((char *) dados.c_str(), " ");
+		int n = atoi(num);
+		msg->dados[0] = (n >> 24) & 0xFF;
+		msg->dados[1] = (n >> 16) & 0xFF;
+		msg->dados[2] = (n >> 8) & 0xFF;
+		msg->dados[3] = n & 0xFF;
+		num = strtok(NULL, "\0\n");
+		if(num){
+			n = atoi(num);
+			msg->dados[4] = (n >> 24) & 0xFF;
+			msg->dados[5] = (n >> 16) & 0xFF;
+			msg->dados[6] = (n >> 8) & 0xFF;
+			msg->dados[7] = n & 0xFF;
+		}
+	// os outros são strings
+	} else {
+		for(int i = 0; i < msg->tam; i++){
+			msg->dados[i] = dados[i]; 
+		}
+	}
 	msg->seq = seq;
 	msg->paridade = msg->tam ^ msg->seq ^ msg->tipo;
 	for(int i = 0; i < msg->tam; i++){
-		msg->dados[i] = dados[i];
 		msg->paridade ^= dados[i]; 
 	}
 
@@ -153,12 +198,19 @@ void envia_mensagem(int soquete, struct mensagem *msg){
 }
 
 struct mensagem *espera_mensagem(int soquete, int src, int seq){
-	struct mensagem *res;
+	int ret = 0;
+	struct mensagem *res = (struct mensagem *)calloc(1, sizeof(struct mensagem));
 	uint8_t res_pacote[19];
+	
 	do{
-		recv(soquete, res_pacote, 19, 0);
+		ret = recv(soquete, res_pacote, 19, 0);
+		if(ret == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)){
+			res->tipo = 0b0111;
+			break;
+		}
 		res = desmonta_pacote(res_pacote);
-	}while(((int)res->src != src));
+	// checa se quem ta mandando é a parte do sistema certa
+	}while(((int)res->src != src)); 
 	return res;
 }
 

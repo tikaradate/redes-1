@@ -43,7 +43,8 @@ int main(){
 			continue;
 		}
 		string comando = string_mensagem(res->tipo);
-		cout << comando << endl;
+		if(!comando.empty())
+			cout << comando << endl;
 		if(comando == "cd"){
 			cd_servidor(soquete, &seq, res);
 		} else if(comando == "ls"){

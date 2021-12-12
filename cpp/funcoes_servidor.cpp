@@ -18,18 +18,6 @@ using std::endl;
 #define CLIENTE 0b01
 #define SERVIDOR 0b10
 
-void teste_nack(int soquete, int seq){
-    for(int i = 0; i < 5; i++){
-        struct mensagem *nack;
-        struct mensagem *msg;
-        nack = monta_mensagem("nack", "", SERVIDOR, CLIENTE, seq);
-        envia_mensagem(soquete, nack);
-        do{
-            msg = espera_mensagem(soquete, CLIENTE, seq);
-        }while(msg->tipo == 0b1001 || seq != msg->seq);
-    }
-}
-
 void cd_servidor (int soquete, int *seq, struct mensagem *res){
     string diretorio;
 	for(int i: res->dados)
@@ -42,8 +30,10 @@ void cd_servidor (int soquete, int *seq, struct mensagem *res){
         envia_mensagem(soquete, ack);
     } else {
         string num_erro = "0";
+        // acesso negado
         if(errno == EACCES){
             num_erro = '1';
+        // diretorio inexistente/não é diretorio
         } else if(errno == ENOENT || errno == ENOTDIR){
             num_erro = '2';
         }
@@ -59,7 +49,7 @@ void cd_servidor (int soquete, int *seq, struct mensagem *res){
 void ls_servidor(int soquete, int *seq, struct mensagem *res){
     struct mensagem *msg;
     string dados, parte;
-    int qt_msg, ls_tam, parte_tam;
+    int ls_tam, parte_tam;
 
     dados = ls(".");
     ls_tam = dados.length();
@@ -165,19 +155,20 @@ void linha_servidor(int soquete, int *seq, struct mensagem *res){
     } while(string_mensagem(res->tipo) != "linha_dados" || res->seq != *seq);
 
     std::ifstream arquivo_stream(arquivo);
-    string linha, n_linha;
+    string linha;
     int linhas_arquivo = conta_linhas(arquivo);
+    int n_linha;
     
-    for(int i: res->dados)
-        n_linha.push_back(i);
+    n_linha = (res->dados[0] << 24) |
+              (res->dados[1] << 16) |
+              (res->dados[2] << 8 ) |
+               res->dados[3]        ;
 
-    int qt_linha = stoi(n_linha);
-
-    if(qt_linha > 0 && qt_linha <= linhas_arquivo){
+    if(n_linha > 0 && n_linha <= linhas_arquivo){
         int j = 1;
         // avança até achar a linha desejada
-        if(qt_linha > 1){
-            while(getline(arquivo_stream, linha) && j < qt_linha){
+        if(n_linha > 1){
+            while(getline(arquivo_stream, linha) && j < n_linha){
                 j++;
             }
         }
@@ -191,7 +182,7 @@ void linha_servidor(int soquete, int *seq, struct mensagem *res){
         for(int i = 0; i < dados_tam; i+=15){
             parte_tam = (dados_tam-i >= 15? 15 : dados_tam-i);
             parte = dados.substr(i, parte_tam);
-            msg = monta_mensagem("conteudo", parte,  0b10, CLIENTE, *seq);
+            msg = monta_mensagem("conteudo", parte,  SERVIDOR, CLIENTE, *seq);
 
             do{
                 envia_mensagem(soquete, msg);
@@ -202,7 +193,7 @@ void linha_servidor(int soquete, int *seq, struct mensagem *res){
         }
     } else {
         // manda vazio pois a linha não existe
-        msg = monta_mensagem("conteudo", "",  0b10, CLIENTE, *seq);
+        msg = monta_mensagem("conteudo", "",  SERVIDOR, CLIENTE, *seq);
         do{
             envia_mensagem(soquete, msg);
             res = espera_mensagem(soquete, CLIENTE, *seq);
@@ -211,7 +202,7 @@ void linha_servidor(int soquete, int *seq, struct mensagem *res){
         *seq = (*seq + 1) % 16;
     }
     do{
-        msg = monta_mensagem("fim", "",  0b10, CLIENTE, *seq);
+        msg = monta_mensagem("fim", "",  SERVIDOR, CLIENTE, *seq);
         envia_mensagem(soquete, msg);
         res = espera_mensagem(soquete, CLIENTE, *seq);
     } while(res->tipo == 0b1001 || *seq != res->seq);
@@ -251,10 +242,18 @@ void linhas_servidor(int soquete, int *seq, struct mensagem *res){
 
     for(int i: res->dados)
         linhas.push_back(i);
+    int linhas_arquivo = conta_linhas(arquivo);
 
-    int linha_inicial = atoi(strtok((char *)linhas.c_str(), "-"));
-    int linha_final = atoi(strtok(NULL, "\n"));
-    int linhas_arquivo = conta_linhas(arquivo); 
+    int linha_inicial = (res->dados[0] << 24) |
+                        (res->dados[1] << 16) |
+                        (res->dados[2] << 8 ) |
+                         res->dados[3]        ;
+
+    int linha_final   = (res->dados[4] << 24) |
+                        (res->dados[5] << 16) |
+                        (res->dados[6] << 8 ) |
+                         res->dados[7]        ;
+    
     
 
     // avança até a linha necessária

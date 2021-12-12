@@ -1,5 +1,5 @@
 CC     = g++ 
-CXXFLAGS = -Wall -Wextra -g 
+CXXFLAGS = -Wall
 
     PROG1 = cliente
 	PROG2 = servidor

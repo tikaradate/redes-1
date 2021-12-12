@@ -37,12 +37,11 @@ int raw_socket(char *dev){
 		exit(-1);
 	}
 		
-
 	memset(&endereco, 0, sizeof(endereco)); 	/*IP do dispositivo*/
 	endereco.sll_family = AF_PACKET;
 	endereco.sll_protocol = htons(ETH_P_ALL);
 	endereco.sll_ifindex = ir.ifr_ifindex;
-	printf("%d %d %d\n", endereco.sll_family, endereco.sll_protocol, endereco.sll_ifindex);
+	
 	if (bind(soquete, (struct sockaddr *)&endereco, sizeof(endereco)) == -1) {
 		printf("Erro no bind\n");
 		exit(-1);
@@ -56,14 +55,14 @@ int raw_socket(char *dev){
 		exit(-1);
 	}
 
-	// struct timeval tv;
-	// tv.tv_sec = 0;
-	// tv.tv_usec = 1000;
-	// if (setsockopt(soquete, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) 
-	// 	perror("Error");
+	struct timeval tv;
+	tv.tv_sec = 0;
+	tv.tv_usec = 1000;
+	if (setsockopt(soquete, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) 
+		perror("setsockopt failed");
 	
-    // if (setsockopt(soquete, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) < 0)
-    //     perror("setsockopt failed\n");
+    if (setsockopt(soquete, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) < 0)
+        perror("setsockopt failed\n");
 
     return soquete;
 }

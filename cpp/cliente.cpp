@@ -46,7 +46,7 @@ int main(){
 		if(strcmp(comando, "cd") == 0){
 			char *dir = strtok(NULL, "\n"); 
 			if(!dir){
-				cerr << "Precisa de um diretório\nUsagem: cd $DIRETORIO" << endl;
+				cerr << "Precisa de um diretório\nUso: cd $DIRETORIO" << endl;
 				continue;
 			} 
 			string diretorio(dir);
@@ -58,7 +58,7 @@ int main(){
 		} else if(strcmp(comando, "ver") == 0){
 			char *arq = strtok(NULL, "\n");
 			if(!arq){
-				cerr << "Precisa de um arquivo\nUsagem: ver $ARQUIVO" << endl;
+				cerr << "Precisa de um arquivo\nUso: ver $ARQUIVO" << endl;
 				continue;
 			}
 			string ver_res;
