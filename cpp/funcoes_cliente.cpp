@@ -384,7 +384,7 @@ string compilar_cliente(int soquete, int *seq, string arquivo, string opcoes){
     // resultado do compilar vindo do servidor
     do{
         res = espera_mensagem(soquete, SERVIDOR, *seq);
-        if(string_mensagem(res->tipo) != "conteudo" && *seq == res->seq){
+        if(string_mensagem(res->tipo) == "conteudo" && *seq == res->seq){
 
             while(!checa_paridade(res)){
                 struct mensagem *nack;

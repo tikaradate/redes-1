@@ -342,15 +342,7 @@ void edit_servidor(int soquete, int *seq, struct mensagem *res){
 
     do{
         res = espera_mensagem(soquete, CLIENTE, *seq);
-        if(string_mensagem(res->tipo) == "conteudo" && *seq == res->seq){
-            while(!checa_paridade(res)){
-                struct mensagem *nack;
-                nack = monta_mensagem("nack", "", SERVIDOR, CLIENTE, *seq);
-                envia_mensagem(soquete, nack);
-                do{
-                    res = espera_mensagem(soquete, CLIENTE, *seq);
-                }while(string_mensagem(res->tipo) != "conteudo" || *seq != res->seq);
-            }
+        if(res->tipo == 0b1100 && *seq == res->seq){
             ack = monta_mensagem("ack", "", SERVIDOR, CLIENTE, *seq);
             envia_mensagem(soquete, ack);
             *seq = (*seq+1)%16;
@@ -358,22 +350,12 @@ void edit_servidor(int soquete, int *seq, struct mensagem *res){
                 texto.push_back(res->dados[i]);
             
         }
-    } while(string_mensagem(res->tipo) != "fim"|| *seq != res->seq);
-
-    while(!checa_paridade(res)){
-        struct mensagem *nack;
-        nack = monta_mensagem("nack", "", SERVIDOR, CLIENTE, *seq);
-        envia_mensagem(soquete, nack);
-        do{
-            res = espera_mensagem(soquete, CLIENTE, *seq);
-        }while(string_mensagem(res->tipo) != "fim" || *seq != res->seq);
-    }
-
+    } while(res->tipo != 0b1101 || *seq != res->seq);
+        
     ack = monta_mensagem("ack", "", SERVIDOR, CLIENTE, *seq);
     envia_mensagem(soquete, ack);
     *seq = (*seq+1)%16;
 
-    // executa a partir daqui o edit
     int linhas_arquivo = conta_linhas(arquivo);
 
     if(linha <= linhas_arquivo){
@@ -448,9 +430,11 @@ void compilar_servidor(int soquete, int *seq, struct mensagem *res){
     string compilar_res;
     FILE *fp;
 
-    fp = popen((char *) gcc_comando.c_str(), "r");
+    if ((fp = popen((char *) gcc_comando.c_str(), "r")) == NULL) {
+        // tratar erro
+        // mandar pro cliente?
+    }
 
-    // le linha a linha o pipe
     while (fgets(buf, 128, fp) != NULL) {
         string dados =  buf;
         int parte_tam, dados_tam;
@@ -465,7 +449,7 @@ void compilar_servidor(int soquete, int *seq, struct mensagem *res){
             do{
                 envia_mensagem(soquete, msg);
                 res = espera_mensagem(soquete, CLIENTE, *seq);
-            } while(string_mensagem(res->tipo) != "ack" || *seq != res->seq);
+            } while(res->tipo != 0b1000 || *seq != res->seq);
         
             *seq = (*seq + 1) % 16;			
         }
@@ -475,11 +459,14 @@ void compilar_servidor(int soquete, int *seq, struct mensagem *res){
         msg = monta_mensagem("fim", "", SERVIDOR, CLIENTE, *seq);
         envia_mensagem(soquete, msg);
         res = espera_mensagem(soquete, CLIENTE, *seq);
-    } while(string_mensagem(res->tipo) != "ack" || *seq != res->seq);
+    } while(string_mensagem(res->tipo) != "ack"|| *seq != res->seq);
      
 
     *seq = (*seq + 1) % 16;
 
-    pclose(fp);
+    if(pclose(fp))  {
+        // tratar erro ou mandar pro cliente? mas já acabou a mensagem importante aqui
+    }
+}
 
 #endif
