@@ -61,7 +61,6 @@ void imprime_mensagem(struct mensagem *msg){
 	printf("tipo: %d\n", msg->tipo);
 }
 
-
 int tipo_mensagem(string tipo){
 	if(tipo == "cd"){
 		return 0b0000;
@@ -140,8 +139,6 @@ struct mensagem *monta_mensagem(string tipo, string dados, int src, int dst, int
 	msg->tipo = tipo_mensagem(tipo);
 	if(dados.empty()) 
 		msg->tam = 0;
-	else if (tipo == "linha_dados")
-		msg->tam = 8;
 	else
 		msg->tam = dados.length();
 
@@ -156,10 +153,14 @@ struct mensagem *monta_mensagem(string tipo, string dados, int src, int dst, int
 		num = strtok(NULL, "\0\n");
 		if(num){
 			n = atoi(num);
+			cout << "aqui oq" << endl;
 			msg->dados[4] = (n >> 24) & 0xFF;
 			msg->dados[5] = (n >> 16) & 0xFF;
 			msg->dados[6] = (n >> 8) & 0xFF;
 			msg->dados[7] = n & 0xFF;
+			msg->tam = 8;
+		} else {
+			msg->tam = 4;
 		}
 	// os outros são strings
 	} else {
@@ -170,9 +171,8 @@ struct mensagem *monta_mensagem(string tipo, string dados, int src, int dst, int
 	msg->seq = seq;
 	msg->paridade = msg->tam ^ msg->seq ^ msg->tipo;
 	for(int i = 0; i < msg->tam; i++){
-		msg->paridade ^= dados[i]; 
+		msg->paridade ^= dados[i];
 	}
-
 	return msg;
 }
 
@@ -206,6 +206,7 @@ bool checa_paridade(struct mensagem *msg){
 	for(int i = 0; i < msg->tam; i++){
 		paridade ^= msg->dados[i]; 
 	}
+
 	return paridade == msg->paridade;
 }
 
