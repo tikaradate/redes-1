@@ -153,7 +153,6 @@ struct mensagem *monta_mensagem(string tipo, string dados, int src, int dst, int
 		num = strtok(NULL, "\0\n");
 		if(num){
 			n = atoi(num);
-			cout << "aqui oq" << endl;
 			msg->dados[4] = (n >> 24) & 0xFF;
 			msg->dados[5] = (n >> 16) & 0xFF;
 			msg->dados[6] = (n >> 8) & 0xFF;

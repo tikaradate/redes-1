@@ -64,25 +64,41 @@ int main(){
 			ver_res = ver_cliente(soquete, &seq, arquivo);
 			cout << ver_res << endl;
 		} else if(strcmp(comando, "linha") == 0){
+			char *linha, *arquivo;
+
+			linha = strtok(NULL, " ");
+			arquivo = strtok(NULL, "\n");
+			if(!linha || !arquivo){
+				cerr << "Faltou algum argumento\nUso: linha $LINHA $ARQUIVO" << endl;
+				continue;
+			} 
+
 			string linha_res;
-			string linha = strtok(NULL, " ");
-			string arquivo = strtok(NULL, "\n");
-			
 			linha_res = linha_cliente(soquete, &seq, arquivo, linha);
 			cout << linha_res << endl;
 		} else if(strcmp(comando, "linhas") == 0){
+			char *inicial, *final, *arquivo;
+			inicial = strtok(NULL, " ");
+			final = strtok(NULL, " ");
+			arquivo = strtok(NULL, "\n");
+			if(!inicial || !final || !arquivo){
+				cerr << "Faltou algum argumento\nUso: linhas $LINHA_INICIAL $LINHA_FINAL $ARQUIVO" << endl;
+				continue;
+			}
+
 			string linhas_res;
-			string linha_inicial = strtok(NULL, " ");
-			string linha_final = strtok(NULL, " ");
-			string arquivo = strtok(NULL, "\n");
-			
-			linhas_res = linhas_cliente(soquete, &seq,arquivo, linha_inicial, linha_final);
+			linhas_res = linhas_cliente(soquete, &seq,arquivo, inicial, final);
 			cout << linhas_res << endl;
 		} else if(strcmp(comando, "edit") == 0){
-			string edit_res;
-			string linha = strtok(NULL, " ");
-			string arquivo = strtok(NULL, " ");
-			string texto = strtok(NULL, "\n");
+			char *linha, *arquivo, *texto;
+			linha = strtok(NULL, " ");
+			arquivo = strtok(NULL, " ");
+			texto = strtok(NULL, "\n");
+
+			if(!linha || !arquivo || !texto){
+				cerr << "Faltou algum argumento\nUso: edit $NUMERO_LINHA $ARQUIVO \"$TEXTO\"" << endl;
+				continue;
+			}
 
 			edit_cliente(soquete, &seq, arquivo, linha, texto);
 		} else if(strcmp(comando, "compilar") == 0){
