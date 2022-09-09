@@ -189,12 +189,13 @@ struct mensagem *espera_mensagem(int soquete, int src, int seq){
 	
 	do{
 		ret = recv(soquete, res_pacote, 19, 0);
+		// deu timeout, recebe uma mensagem falsa para sinalizar o reenvio
 		if(ret == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)){
 			res->tipo = 0b0111;
 			break;
 		}
 		res = desmonta_pacote(res_pacote);
-	// checa se quem ta mandando é a parte do sistema certa
+	// checa se quem ta mandando é a parte do certa do sistema
 	}while(((int)res->src != src)); 
 	return res;
 }

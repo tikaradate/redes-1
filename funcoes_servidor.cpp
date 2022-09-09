@@ -58,6 +58,7 @@ void ls_servidor(int soquete, int *seq, struct mensagem *res){
     dados = ls(".");
     ls_tam = dados.length();
 
+    // envia a resposta do comando
     for(int i = 0; i < ls_tam; i+=15){
         parte_tam = (ls_tam-i >= 15? 15 : ls_tam-i);
         parte = dados.substr(i, parte_tam);
@@ -108,6 +109,7 @@ void ver_servidor(int soquete, int *seq, struct mensagem *res){
 
         dados_tam = dados.length();
 
+        // envia a resposta do comando
         for(int i = 0; i < dados_tam; i+=15){
             parte_tam = (dados_tam-i >= 15? 15 : dados_tam-i);
             parte = dados.substr(i, parte_tam);
@@ -169,7 +171,6 @@ void linha_servidor(int soquete, int *seq, struct mensagem *res){
               (res->dados[2] << 8 ) |
                res->dados[3]        ;
 
-    cout << n_linha << endl;
     if(n_linha > 0 && n_linha <= linhas_arquivo){
         int j = 1;
         // avança até achar a linha desejada
@@ -184,7 +185,7 @@ void linha_servidor(int soquete, int *seq, struct mensagem *res){
         string parte;
 
         dados_tam = dados.length();
-
+        // envia a resposta do comando
         for(int i = 0; i < dados_tam; i+=15){
             parte_tam = (dados_tam-i >= 15? 15 : dados_tam-i);
             parte = dados.substr(i, parte_tam);
@@ -268,7 +269,8 @@ void linhas_servidor(int soquete, int *seq, struct mensagem *res){
                 string parte;
 
                 dados_tam = dados.length();
-            
+
+                // envia a resposta do comando
                 for(int i = 0; i < dados_tam; i+=15){
                     parte_tam = (dados_tam-i >= 15? 15 : dados_tam-i);
                     parte = dados.substr(i, parte_tam);
@@ -286,6 +288,7 @@ void linhas_servidor(int soquete, int *seq, struct mensagem *res){
 
         }
     } else {
+        // envia a resposta vazia se as linhas não fazem sentido
         msg = monta_mensagem("conteudo", "", SERVIDOR, CLIENTE, *seq);
         do{
             envia_mensagem(soquete, msg);
@@ -376,6 +379,7 @@ void edit_servidor(int soquete, int *seq, struct mensagem *res){
     envia_mensagem(soquete, ack);
     *seq = (*seq+1)%16;
 
+    // edita o texto aqui
     int linhas_arquivo = conta_linhas(arquivo);
 
     if(linha <= linhas_arquivo){
@@ -457,6 +461,7 @@ void compilar_servidor(int soquete, int *seq, struct mensagem *res){
         int parte_tam, dados_tam;
         string parte;
 
+        // envia a resposta do comando
         dados_tam = dados.length();
         for(int i = 0; i < dados_tam; i+=15){
             parte_tam = (dados_tam-i >= 15? 15 : dados_tam-i);

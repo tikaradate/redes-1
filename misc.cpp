@@ -88,16 +88,7 @@ string ls(const char *dir)
 	struct dirent *d;
 	string s;
 	DIR *dh = opendir(dir);
-	if (!dh)
-	{
-		if (errno == ENOENT){
-			perror("Directory doesn't exist");
-        } else {
-			perror("Unable to read directory");
-		}
-		exit(EXIT_FAILURE);
-	}
-
+	
 	while ((d = readdir(dh)) != NULL){
 		s.append(d->d_name);
 		s.push_back(' ');

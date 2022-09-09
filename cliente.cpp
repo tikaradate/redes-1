@@ -145,7 +145,6 @@ int main(){
 				} else if(errno == ENOENT || errno == ENOTDIR){
 					cerr << "Diretorio inexistente." << endl;;
 				}
-			}
 		} else if(strcmp(comando, "lls") == 0){
 			cout << ls(".") << endl;
 		}

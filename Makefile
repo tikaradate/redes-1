@@ -1,9 +1,9 @@
-CC     = gcc -g -std=c11
-CFLAGS = -Wall
+CC     = g++ 
+CXXFLAGS = -Wall
 
     PROG1 = cliente
 	PROG2 = servidor
-    OBJS = comms.o mensagem.o
+    OBJS = misc.o mensagem.o funcoes_cliente.o funcoes_servidor.o
 
 .PHONY: clean all
 
@@ -20,4 +20,6 @@ $(PROG2) : % :  $(OBJS) %.o
 
 clean: 
 	@rm -f *.o
+	
+purge: clean
 	@rm -f $(PROG1) $(PROG2)
